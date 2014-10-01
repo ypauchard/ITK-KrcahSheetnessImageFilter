@@ -72,3 +72,8 @@ Makefile*
 *.qmlproject.user
 *.qmlproject.user.*
 
+# MAC
+.DS_STORE
+
+# IDE
+.idea
