@@ -36,8 +36,7 @@ typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImage
 typedef itk::DescoteauxSheetnessImageFilter<EigenValueImageType, OutputImageType> SheetnessFilterType;
 typedef itk::DescoteauxSheetnessImageFilterFemur<EigenValueImageType, OutputImageType> FemurSheetnessFilterType;
 typedef itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType> RescaleFilterType;
-typedef itk::Functor::Abs<InternalImageType::PixelType, InternalImageType::PixelType> AbsFunctorType;
-typedef itk::UnaryFunctorImageFilter<InternalImageType, InternalImageType, AbsFunctorType> AbsFilterType;
+typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 typedef itk::Functor::Maximum<OutputImageType::PixelType, OutputImageType::PixelType, OutputImageType::PixelType> MaximumFunctorType;
 typedef itk::BinaryFunctorImageFilter<OutputImageType, OutputImageType, OutputImageType, MaximumFunctorType> MaximumFilterType;
 
@@ -88,8 +87,8 @@ void process(char *imagePath) {
 
     // output
     viewer.AddImage(input.GetPointer(), true, "input");
-    viewer.AddImage(m_MaximumFilterDefault->GetOutput(), true, "default sheetness");
-    viewer.AddImage(m_MaximumFilterFemur->GetOutput(), true, "femur optimzed sheetness");
+    viewer.AddImage(m_MaximumFilterDefault->GetOutput(), true, "default sheetness filter");
+    viewer.AddImage(m_MaximumFilterFemur->GetOutput(), true, "femur sheetness filter");
     viewer.Visualize();
 }
 
@@ -112,7 +111,7 @@ OutputImageType::Pointer calculateSheetness(InputImageType::Pointer input, float
     SheetnessFilterType::Pointer m_SheetnessFilter = SheetnessFilterType::New();
     m_SheetnessFilter->SetSheetnessNormalization(0.5); // = alpha
     m_SheetnessFilter->SetBloobinessNormalization(0.5); // = beta
-    m_SheetnessFilter->SetNoiseNormalization(0.25); // = gamma
+    m_SheetnessFilter->SetNoiseNormalization(1.0); // = gamma
     m_SheetnessFilter->SetDetectBrightSheets(true);
 
     // abs
