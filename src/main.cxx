@@ -43,7 +43,9 @@ typedef itk::BinaryFunctorImageFilter<OutputImageType, OutputImageType, OutputIm
 
 // functions
 void process(char *);
+
 FileReaderType::Pointer readImage(char *path);
+
 OutputImageType::Pointer calculateSheetness(InputImageType::Pointer input, float sigma);
 
 OutputImageType::Pointer calculateFemurSheetness(InputImageType::Pointer input, float sigma);

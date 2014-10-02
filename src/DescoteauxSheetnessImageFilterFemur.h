@@ -65,12 +65,10 @@ namespace itk {
                 double l1 = vnl_math_abs(a1);
                 double l2 = vnl_math_abs(a2);
                 double l3 = vnl_math_abs(a3);
-//
-// Sort the values by their absolute value.
-// At the end of the sorting we should have
-//
-// l1 <= l2 <= l3
-//
+
+                // Sort the values by their absolute value.
+                // At the end of the sorting we should have
+                // l1 <= l2 <= l3
                 if (l1 > l2) {
                     std::swap(l1, l2);
                     std::swap(a1, a2);
@@ -94,9 +92,8 @@ namespace itk {
                         return static_cast<TOutput>( sheetness );
                     }
                 }
-//
-// Avoid divisions by zero (or close to zero)
-//
+
+                // Avoid divisions by zero (or close to zero)
                 if (static_cast<double>( l3 ) < vnl_math::eps || static_cast<double>( l2 ) < vnl_math::eps) {
                     return static_cast<TOutput>( sheetness );
                 }
