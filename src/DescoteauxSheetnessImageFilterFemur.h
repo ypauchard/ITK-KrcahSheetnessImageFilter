@@ -15,6 +15,7 @@ PURPOSE. See the above copyright notices for more information.
 
 #include "itkUnaryFunctorImageFilter.h"
 #include "vnl/vnl_math.h"
+#include <algorithm>
 
 namespace itk {
 /** \class DescoteauxSheetnessImageFilterFemur
@@ -70,30 +71,19 @@ namespace itk {
 //
 // l1 <= l2 <= l3
 //
-                if (l2 > l3) {
-                    double tmpl = l3;
-                    l3 = l2;
-                    l2 = tmpl;
-                    double tmpa = a3;
-                    a3 = a2;
-                    a2 = tmpa;
-                }
                 if (l1 > l2) {
-                    double tmp = l1;
-                    l1 = l2;
-                    l2 = tmp;
-                    double tmpa = a1;
-                    a1 = a2;
-                    a2 = tmpa;
+                    std::swap(l1, l2);
+                    std::swap(a1, a2);
+                }
+                if (l1 > l3) {
+                    std::swap(l1, l3);
+                    std::swap(a1, a3);
                 }
                 if (l2 > l3) {
-                    double tmp = l3;
-                    l3 = l2;
-                    l2 = tmp;
-                    double tmpa = a3;
-                    a3 = a2;
-                    a2 = tmpa;
+                    std::swap(l2, l3);
+                    std::swap(a2, a3);
                 }
+
                 if (this->m_DetectBrightSheets) {
                     if (a3 > 0.0) {
                         return static_cast<TOutput>( sheetness );
