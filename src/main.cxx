@@ -9,6 +9,7 @@
 #include "itkAbsImageFilter.h"
 #include "itkBinaryFunctorImageFilter.h"
 #include "itkMaximumImageFilter.h"
+#include "itkGetAverageSliceImageFilter.h"
 
 #include "DescoteauxSheetnessImageFilter.h"
 #include "KrcahSheetnessImageFilter.h"
@@ -31,6 +32,7 @@ typedef itk::HessianRecursiveGaussianImageFilter<InternalImageType> HessianFilte
 typedef HessianFilterType::OutputImageType HessianImageType;
 typedef HessianImageType::PixelType HessianPixelType;
 typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
+typedef itk::GetAverageSliceImageFilter<InternalImageType, InternalImageType> AverageSliceFilterType;
 typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType;
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
@@ -101,9 +103,10 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     EigenAnalysisFilterType::Pointer m_EigenAnalysisFilter = EigenAnalysisFilterType::New();
     m_EigenAnalysisFilter->SetDimension(IMAGE_DIMENSION);
 
-    // calculate trace
+    // calculate average trace
     TraceFilterType::Pointer m_TraceFilter = TraceFilterType::New();
     m_TraceFilter->SetDimension(IMAGE_DIMENSION);
+    AverageSliceFilterType::Pointer m_AverageSliceFilter = AverageSliceFilterType::New();
 
     // sheetness
     SheetnessFilter::Pointer m_SheetnessFilter = SheetnessFilter::New();
@@ -124,6 +127,8 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     m_DiffusionFilter->SetInput(input);
     m_HessianFilter->SetInput(m_DiffusionFilter->GetOutput());
     m_EigenAnalysisFilter->SetInput(m_HessianFilter->GetOutput());
+    m_TraceFilter->SetInput(m_HessianFilter->GetOutput());
+    m_AverageSliceFilter->SetInput(m_TraceFilter->GetOutput());
     m_SheetnessFilter->SetInput(m_EigenAnalysisFilter->GetOutput());
     m_AbsFilter->SetInput(m_SheetnessFilter->GetOutput());
     m_RescaleFilter->SetInput(m_AbsFilter->GetOutput());

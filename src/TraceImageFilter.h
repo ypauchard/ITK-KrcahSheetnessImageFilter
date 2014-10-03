@@ -1,3 +1,6 @@
+#ifndef __TraceImageFilter_h_
+#define __TraceImageFilter_h_
+
 #include "itkUnaryFunctorImageFilter.h"
 
 namespace itk {
@@ -85,3 +88,5 @@ namespace itk {
         void operator=(const Self &);   //purposely not implemented
     };
 }
+
+#endif // __TraceImageFilter_h_
