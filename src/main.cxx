@@ -12,6 +12,7 @@
 
 #include "DescoteauxSheetnessImageFilter.h"
 #include "KrcahSheetnessImageFilter.h"
+#include "TraceFunctor.h"
 
 // pixel / image type
 const unsigned int IMAGE_DIMENSION = 3;
@@ -29,6 +30,8 @@ typedef itk::CurvatureAnisotropicDiffusionImageFilter<InputImageType, InternalIm
 typedef itk::HessianRecursiveGaussianImageFilter<InternalImageType> HessianFilterType;
 typedef HessianFilterType::OutputImageType HessianImageType;
 typedef HessianImageType::PixelType HessianPixelType;
+typedef itk::Functor::Trace<HessianPixelType, InternalPixelType> TraceFunctorType;
+typedef itk::UnaryFunctorImageFilter<HessianImageType, InternalImageType, TraceFunctorType> TraceFilterType;
 typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType;
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
@@ -52,7 +55,6 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
 // ./Testbench /path/to/input /path/to/output
 int main(int argc, char *argv[]) {
     int ret = process(argv[1], argv[2]);
-
     return ret;
 }
 
