@@ -1,5 +1,5 @@
 ## Description
-Implementation of a sheetness image filter as described by Krcah el. al.
+Implementation of a sheetness image filter as described by Krcah et. al.
 
 ## Usage
 `./Testbench /path/to/input /path/to/output`

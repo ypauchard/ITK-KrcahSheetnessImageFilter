@@ -12,7 +12,7 @@
 
 #include "DescoteauxSheetnessImageFilter.h"
 #include "KrcahSheetnessImageFilter.h"
-#include "TraceFunctor.h"
+#include "TraceImageFilter.h"
 
 // pixel / image type
 const unsigned int IMAGE_DIMENSION = 3;

@@ -24,7 +24,7 @@ namespace itk {
 *
 * Based on the "Sheetness" measure proposed by Decouteaux et. al.
 *
-* M.Descoteaux, M.Audette, K.Chinzei, el al.:
+* M.Descoteaux, M.Audette, K.Chinzei, et al.:
 * "Bone enhancement filtering: Application to sinus bone segmentation
 * and simulation of pituitary surgery."
 * In: MICCAI. (2005) 9–16
@@ -141,13 +141,13 @@ namespace itk {
     template<class TInputImage, class TOutputImage>
     class ITK_EXPORT KrcahSheetnessImageFilter :
             public UnaryFunctorImageFilter<TInputImage, TOutputImage,
-                    Functor::KrcahSheetness<typename TInputImage::PixelType,
+                    Functor::KrcahSheetness<
+                            typename TInputImage::PixelType,
                             typename TOutputImage::PixelType> > {
     public:
 /** Standard class typedefs. */
         typedef KrcahSheetnessImageFilter Self;
-        typedef UnaryFunctorImageFilter<
-                TInputImage, TOutputImage,
+        typedef UnaryFunctorImageFilter<TInputImage, TOutputImage,
                 Functor::KrcahSheetness<
                         typename TInputImage::PixelType,
                         typename TOutputImage::PixelType> > Superclass;
@@ -185,10 +185,8 @@ namespace itk {
 #ifdef ITK_USE_CONCEPT_CHECKING
 /** Begin concept checking */
         typedef typename TInputImage::PixelType InputPixelType;
-        itkConceptMacro(BracketOperatorsCheck,
-                (Concept::BracketOperator<InputPixelType, unsigned int, double>));
-        itkConceptMacro(DoubleConvertibleToOutputCheck,
-                (Concept::Convertible<double, typename TOutputImage::PixelType>));
+        itkConceptMacro(BracketOperatorsCheck, (Concept::BracketOperator<InputPixelType, unsigned int, double>));
+        itkConceptMacro(DoubleConvertibleToOutputCheck, (Concept::Convertible<double, typename TOutputImage::PixelType>));
 /** End concept checking */
 #endif
     protected:

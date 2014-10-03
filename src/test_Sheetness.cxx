@@ -2,7 +2,7 @@
 #include "gtest/gtest.h"
 
 #include "itkSymmetricSecondRankTensor.h"
-#include "TraceFunctor.h"
+#include "TraceImageFilter.h"
 
 TEST(TraceFunctor, double2x2) {
     typedef double InternalPixelType;

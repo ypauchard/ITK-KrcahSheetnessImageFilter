@@ -1,11 +1,10 @@
-/**
-* This functor calculates the trace tr(A) which is defined as the sum of all elements
-* on the main diagonal of matrix A. tr(A) = a11+a22+...+ann
-*/
-
 #include "itkUnaryFunctorImageFilter.h"
 
 namespace itk {
+    /**
+    * This functor calculates the trace tr(A) which is defined as the sum of all elements
+    * on the main diagonal of matrix A. tr(A) = a11+a22+...+ann
+    */
     namespace Functor {
         template<class TInput, class TOutput>
         class Trace {
