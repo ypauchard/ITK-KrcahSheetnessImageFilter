@@ -10,7 +10,7 @@
 #include "itkMaximumImageFilter.h"
 
 #include "DescoteauxSheetnessImageFilter.h"
-#include "DescoteauxSheetnessImageFilterFemur.h"
+#include "KrcahSheetnessImageFilter.h"
 
 // vtk
 #include "QuickView.h"
@@ -34,7 +34,7 @@ typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
 typedef itk::DescoteauxSheetnessImageFilter<EigenValueImageType, OutputImageType> SheetnessFilterType;
-typedef itk::DescoteauxSheetnessImageFilterFemur<EigenValueImageType, OutputImageType> FemurSheetnessFilterType;
+typedef itk::KrcahSheetnessImageFilter<EigenValueImageType, OutputImageType> FemurSheetnessFilterType;
 typedef itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType> RescaleFilterType;
 typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 typedef itk::Functor::Maximum<OutputImageType::PixelType, OutputImageType::PixelType, OutputImageType::PixelType> MaximumFunctorType;
@@ -87,8 +87,8 @@ void process(char *imagePath) {
 
     // output
     viewer.AddImage(input.GetPointer(), true, "input");
-    viewer.AddImage(m_MaximumFilterDefault->GetOutput(), true, "default sheetness filter");
-    viewer.AddImage(m_MaximumFilterFemur->GetOutput(), true, "femur sheetness filter");
+    viewer.AddImage(m_MaximumFilterDefault->GetOutput(), true, "DescoteauxSheetnessImageFilter");
+    viewer.AddImage(m_MaximumFilterFemur->GetOutput(), true, "KrcahSheetnessImageFilter");
     viewer.Visualize();
 }
 

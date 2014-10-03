@@ -1,6 +1,6 @@
 /*=========================================================================
 Program: Insight Segmentation & Registration Toolkit
-Module: itkDescoteauxSheetnessImageFilter.h
+Module: itkKrcahSheetnessImageFilter.h
 Language: C++
 Date: $Date$
 Version: $Revision$
@@ -10,15 +10,15 @@ This software is distributed WITHOUT ANY WARRANTY; without even
 the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
 PURPOSE. See the above copyright notices for more information.
 =========================================================================*/
-#ifndef __itkDescoteauxSheetnessImageFilterFemur_h
-#define __itkDescoteauxSheetnessImageFilterFemur_h
+#ifndef __itkKrcahSheetnessImageFilter_h
+#define __itkKrcahSheetnessImageFilter_h
 
 #include "itkUnaryFunctorImageFilter.h"
 #include "vnl/vnl_math.h"
 #include <algorithm>
 
 namespace itk {
-/** \class DescoteauxSheetnessImageFilterFemur
+/** \class KrcahSheetnessImageFilter
 *
 * \brief Computes a measure of Sheetness from the Hessian Eigenvalues optimzed for usage in femur / pelvis segmentation.
 *
@@ -139,13 +139,13 @@ namespace itk {
         };
     }
     template<class TInputImage, class TOutputImage>
-    class ITK_EXPORT DescoteauxSheetnessImageFilterFemur :
+    class ITK_EXPORT KrcahSheetnessImageFilter :
             public UnaryFunctorImageFilter<TInputImage, TOutputImage,
                     Function::FemurSheetness<typename TInputImage::PixelType,
                             typename TOutputImage::PixelType> > {
     public:
 /** Standard class typedefs. */
-        typedef DescoteauxSheetnessImageFilterFemur Self;
+        typedef KrcahSheetnessImageFilter Self;
         typedef UnaryFunctorImageFilter<
                 TInputImage, TOutputImage,
                 Function::FemurSheetness<
@@ -156,7 +156,7 @@ namespace itk {
 /** Method for creation through the object factory. */
         itkNewMacro(Self);
 /** Runtime information support. */
-        itkTypeMacro(DescoteauxSheetnessImageFilterFemur,
+        itkTypeMacro(KrcahSheetnessImageFilter,
                 UnaryFunctorImageFilter);
 
 /** Set the normalization term for sheetness */
@@ -192,14 +192,14 @@ namespace itk {
 /** End concept checking */
 #endif
     protected:
-        DescoteauxSheetnessImageFilterFemur() {
+        KrcahSheetnessImageFilter() {
         }
 
-        virtual ~DescoteauxSheetnessImageFilterFemur() {
+        virtual ~KrcahSheetnessImageFilter() {
         }
 
     private:
-        DescoteauxSheetnessImageFilterFemur(const Self &); //purposely not implemented
+        KrcahSheetnessImageFilter(const Self &); //purposely not implemented
         void operator=(const Self &); //purposely not implemented
     };
 } // end namespace itk
