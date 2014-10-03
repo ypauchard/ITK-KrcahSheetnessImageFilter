@@ -1,4 +1,18 @@
 // ITK
+#include "itkImageFileReader.h"
+#include "itkImageFileWriter.h"
+#include "itkImageSpatialObject.h"
+#include "itkHessianRecursiveGaussianImageFilter.h"
+#include "itkSymmetricEigenAnalysisImageFilter.h"
+#include "itkRescaleIntensityImageFilter.h"
+#include "itkCurvatureAnisotropicDiffusionImageFilter.h"
+#include "itkAbsImageFilter.h"
+#include "itkBinaryFunctorImageFilter.h"
+#include "itkMaximumImageFilter.h"
+
+#include "DescoteauxSheetnessImageFilter.h"
+#include "KrcahSheetnessImageFilter.h"
+#include "TraceFunctor.h"
 
 // pixel / image type
 const unsigned int IMAGE_DIMENSION = 3;
@@ -16,7 +30,7 @@ typedef itk::CurvatureAnisotropicDiffusionImageFilter<InputImageType, InternalIm
 typedef itk::HessianRecursiveGaussianImageFilter<InternalImageType> HessianFilterType;
 typedef HessianFilterType::OutputImageType HessianImageType;
 typedef HessianImageType::PixelType HessianPixelType;
-typedef itk::Functor::Trace<HessianPixelType, InternalPixelType> TraceFunctorType;
+typedef itk::Functor::Trace<HessianPixelType, double> TraceFunctorType;
 typedef itk::UnaryFunctorImageFilter<HessianImageType, InternalImageType, TraceFunctorType> TraceFilterType;
 typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType;
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
@@ -87,6 +101,10 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     // eigen analysis
     EigenAnalysisFilterType::Pointer m_EigenAnalysisFilter = EigenAnalysisFilterType::New();
     m_EigenAnalysisFilter->SetDimension(IMAGE_DIMENSION);
+
+    // calculate trace
+    TraceFilterType::Pointer m_TraceFilter = TraceFilterType::New();
+    m_TraceFilter->GetFunctor().SetDimension(IMAGE_DIMENSION); // TODO: is there a way to set this via filter or automatically?
 
     // sheetness
     SheetnessFilter::Pointer m_SheetnessFilter = SheetnessFilter::New();
