@@ -1,11 +1,12 @@
-## Usage
-`./Testbench /path/to/image.png`
+## Description
+Implementation of a sheetness image filter as described by Krcah el. al.
 
-Example: `./Testbench ../data/pelvis_axial.png`
+## Usage
+`./Testbench /path/to/input /path/to/output`
+
+Example: `./Testbench ../data/pelvis.mhd ../data/out.mhd`
 
 ## Build Instruction
-requires an ITK build with ItkVtkGlue.
-
 ```
 mkdir bin
 cd bin

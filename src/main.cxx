@@ -13,9 +13,6 @@
 #include "DescoteauxSheetnessImageFilter.h"
 #include "KrcahSheetnessImageFilter.h"
 
-// vtk
-#include "QuickView.h"
-
 // pixel / image type
 const unsigned int IMAGE_DIMENSION = 3;
 typedef signed short InputPixelType;
@@ -43,28 +40,25 @@ typedef itk::Functor::Maximum<OutputImageType::PixelType, OutputImageType::Pixel
 typedef itk::BinaryFunctorImageFilter<OutputImageType, OutputImageType, OutputImageType, MaximumFunctorType> MaximumFilterType;
 
 // functions
-int process(char *);
+int process(char *in, char *out);
 
-FileReaderType::Pointer readImage(char *path);
+FileReaderType::Pointer readImage(char *pathInput);
 
 OutputImageType::Pointer calculateSheetness(InputImageType::Pointer input, float sigma);
 
 OutputImageType::Pointer calculateFemurSheetness(InputImageType::Pointer input, float sigma);
 
-// data
-QuickView viewer;
-
 // expected CLI call:
-// ./Testbench /path/to/image.jpg
+// ./Testbench /path/to/input /path/to/output
 int main(int argc, char *argv[]) {
-    int ret = process(argv[1]);
+    int ret = process(argv[1], argv[2]);
 
     return ret;
 }
 
-int process(char *imagePath) {
+int process(char *inputPath, char *outputPath) {
     // read input
-    FileReaderType::Pointer inputReader = readImage(imagePath);
+    FileReaderType::Pointer inputReader = readImage(inputPath);
     InputImageType::Pointer input = inputReader->GetOutput();
 
 //    // get the sheetness for both sigma with descoteauxs sheetness implementation
@@ -93,7 +87,7 @@ int process(char *imagePath) {
     // write result
     std::cout << "writing to file..." << std::endl;
     FileWriterType::Pointer writer = FileWriterType::New();
-    writer->SetFileName("../data/out.mhd");
+    writer->SetFileName(outputPath);
     writer->SetInput(m_MaximumFilterKrcah->GetOutput());
 
     try {
