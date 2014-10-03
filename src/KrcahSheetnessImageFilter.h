@@ -34,11 +34,11 @@ namespace itk {
 * M. Krcah, G. Szekely, R. Blanc:
 * "Fully automatic and fast segmentation of the femur bone from 3d-CT images with no shape prior"
 */
-    namespace Function {
+    namespace Functor {
         template<class TInput, class TOutput>
-        class FemurSheetness {
+        class KrcahSheetness {
         public:
-            FemurSheetness() {
+            KrcahSheetness() {
                 // suggested values by Krcah el. al.
                 m_Alpha = 0.5;
                 m_Beta = 0.5;
@@ -46,14 +46,14 @@ namespace itk {
                 m_DetectBrightSheets = true;
             }
 
-            ~FemurSheetness() {
+            ~KrcahSheetness() {
             }
 
-            bool operator!=(const FemurSheetness &) const {
+            bool operator!=(const KrcahSheetness &) const {
                 return false;
             }
 
-            bool operator==(const FemurSheetness &other) const {
+            bool operator==(const KrcahSheetness &other) const {
                 return !(*this != other);
             }
 
@@ -141,14 +141,14 @@ namespace itk {
     template<class TInputImage, class TOutputImage>
     class ITK_EXPORT KrcahSheetnessImageFilter :
             public UnaryFunctorImageFilter<TInputImage, TOutputImage,
-                    Function::FemurSheetness<typename TInputImage::PixelType,
+                    Functor::KrcahSheetness<typename TInputImage::PixelType,
                             typename TOutputImage::PixelType> > {
     public:
 /** Standard class typedefs. */
         typedef KrcahSheetnessImageFilter Self;
         typedef UnaryFunctorImageFilter<
                 TInputImage, TOutputImage,
-                Function::FemurSheetness<
+                Functor::KrcahSheetness<
                         typename TInputImage::PixelType,
                         typename TOutputImage::PixelType> > Superclass;
         typedef SmartPointer<Self> Pointer;
