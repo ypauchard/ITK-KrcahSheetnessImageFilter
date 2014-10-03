@@ -30,8 +30,7 @@ typedef itk::CurvatureAnisotropicDiffusionImageFilter<InputImageType, InternalIm
 typedef itk::HessianRecursiveGaussianImageFilter<InternalImageType> HessianFilterType;
 typedef HessianFilterType::OutputImageType HessianImageType;
 typedef HessianImageType::PixelType HessianPixelType;
-typedef itk::Functor::Trace<HessianPixelType, double> TraceFunctorType;
-typedef itk::UnaryFunctorImageFilter<HessianImageType, InternalImageType, TraceFunctorType> TraceFilterType;
+typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
 typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType;
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
@@ -104,7 +103,7 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
 
     // calculate trace
     TraceFilterType::Pointer m_TraceFilter = TraceFilterType::New();
-    m_TraceFilter->GetFunctor().SetDimension(IMAGE_DIMENSION); // TODO: is there a way to set this via filter or automatically?
+    m_TraceFilter->SetDimension(IMAGE_DIMENSION);
 
     // sheetness
     SheetnessFilter::Pointer m_SheetnessFilter = SheetnessFilter::New();
