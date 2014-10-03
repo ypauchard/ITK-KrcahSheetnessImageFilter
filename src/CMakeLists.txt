@@ -1,6 +1,6 @@
 
 include_directories(include)
 
-add_executable(Testbench main.cxx)
+add_executable(KrcahSheetness main.cxx)
 
-target_link_libraries(Testbench ${Glue} ${VTK_LIBRARIES} ${ITK_LIBRARIES} )
+target_link_libraries(KrcahSheetness ${Glue} ${VTK_LIBRARIES} ${ITK_LIBRARIES} )
