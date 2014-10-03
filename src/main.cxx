@@ -44,9 +44,9 @@ int process(char *in, char *out);
 
 FileReaderType::Pointer readImage(char *pathInput);
 
-OutputImageType::Pointer calculateSheetness(InputImageType::Pointer input, float sigma);
+OutputImageType::Pointer calculateDescoteauxSheetness(InputImageType::Pointer input, float sigma);
 
-OutputImageType::Pointer calculateFemurSheetness(InputImageType::Pointer input, float sigma);
+OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, float sigma);
 
 // expected CLI call:
 // ./Testbench /path/to/input /path/to/output
@@ -60,29 +60,27 @@ int process(char *inputPath, char *outputPath) {
     // read input
     FileReaderType::Pointer inputReader = readImage(inputPath);
     InputImageType::Pointer input = inputReader->GetOutput();
-
+//
 //    // get the sheetness for both sigma with descoteauxs sheetness implementation
-//    InternalImageType::Pointer resultSigma075Descoteaux = calculateSheetness(input, 0.75);
-//    InternalImageType::Pointer resultSigma100Descoteaux = calculateSheetness(input, 1.0);
+//    InternalImageType::Pointer resultSigma075Descoteaux = calculateDescoteauxSheetness(input, 0.75);
+//    InternalImageType::Pointer resultSigma100Descoteaux = calculateDescoteauxSheetness(input, 1.0);
 //
 //    // result(x,y) = max(resultSigma075Descoteaux(x,y), resultSigma100Descoteaux(x,y))
 //    MaximumFilterType::Pointer m_MaximumFilterDescoteaux = MaximumFilterType::New();
 //    m_MaximumFilterDescoteaux->SetInput1(resultSigma075Descoteaux);
 //    m_MaximumFilterDescoteaux->SetInput2(resultSigma100Descoteaux);
-//    m_MaximumFilterDescoteaux->Update();
 
     // get the sheetness for both sigma with femur optimized sheetness implementation
     std::cout << "Processing with sigma=0.75..." << std::endl;
-    InternalImageType::Pointer resultSigma075Krcah = calculateFemurSheetness(input, 0.75);
+    InternalImageType::Pointer resultSigma075Krcah = calculateKrcahSheetness(input, 0.75);
     std::cout << "Processing with sigma=1.0..." << std::endl;
-    InternalImageType::Pointer resultSigma100Krcah = calculateFemurSheetness(input, 1.0);
+    InternalImageType::Pointer resultSigma100Krcah = calculateKrcahSheetness(input, 1.0);
 
     // result(x,y) = max(resultSigma075Krcah(x,y), resultSigma100Krcah(x,y))
     std::cout << "combining results..." << std::endl;
     MaximumFilterType::Pointer m_MaximumFilterKrcah = MaximumFilterType::New();
     m_MaximumFilterKrcah->SetInput1(resultSigma075Krcah);
     m_MaximumFilterKrcah->SetInput2(resultSigma100Krcah);
-    m_MaximumFilterKrcah->Update();
 
     // write result
     std::cout << "writing to file..." << std::endl;
@@ -99,7 +97,7 @@ int process(char *inputPath, char *outputPath) {
     return EXIT_SUCCESS;
 }
 
-OutputImageType::Pointer calculateSheetness(InputImageType::Pointer input, float sigma) {
+OutputImageType::Pointer calculateDescoteauxSheetness(InputImageType::Pointer input, float sigma) {
     // anisotropic diffusion
     DiffusionFilterType::Pointer m_DiffusionFilter = DiffusionFilterType::New();
     m_DiffusionFilter->SetNumberOfIterations(10);
@@ -141,7 +139,7 @@ OutputImageType::Pointer calculateSheetness(InputImageType::Pointer input, float
     return m_RescaleFilter->GetOutput();
 }
 
-OutputImageType::Pointer calculateFemurSheetness(InputImageType::Pointer input, float sigma) {
+OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, float sigma) {
     // anisotropic diffusion
     DiffusionFilterType::Pointer m_DiffusionFilter = DiffusionFilterType::New();
     m_DiffusionFilter->SetNumberOfIterations(10);
@@ -186,6 +184,5 @@ OutputImageType::Pointer calculateFemurSheetness(InputImageType::Pointer input, 
 FileReaderType::Pointer readImage(char *path) {
     FileReaderType::Pointer reader = FileReaderType::New();
     reader->SetFileName(path);
-    reader->Update();
     return reader;
 }
