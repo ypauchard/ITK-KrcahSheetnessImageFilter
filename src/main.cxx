@@ -113,6 +113,7 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     TraceFilterType::Pointer m_TraceFilter = TraceFilterType::New();
     m_TraceFilter->SetDimension(IMAGE_DIMENSION);
     AverageSliceFilterType::Pointer m_AverageSliceFilter = AverageSliceFilterType::New();
+    m_AverageSliceFilter->SetAveragedOutDimension(2);
 
     // Sheetness
     SheetnessBroadcastingFilterType::Pointer m_SheetnessFilter = SheetnessBroadcastingFilterType::New();
@@ -131,6 +132,7 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     m_EigenAnalysisFilter->SetInput(m_HessianFilter->GetOutput());
     m_TraceFilter->SetInput(m_HessianFilter->GetOutput());
     m_AverageSliceFilter->SetInput(m_TraceFilter->GetOutput());
+    m_AverageSliceFilter->Update(); // we need to call this explicitly beause of the 'hacky' nature of BroadcastingBinaryFunctorImageFilter
 
     m_SheetnessFilter->SetInput1(m_EigenAnalysisFilter->GetOutput());
     m_SheetnessFilter->SetInput2(m_AverageSliceFilter->GetOutput());

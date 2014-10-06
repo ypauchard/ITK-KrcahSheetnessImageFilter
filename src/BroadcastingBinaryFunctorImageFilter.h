@@ -1,3 +1,10 @@
+/**
+* TODO:
+* - Because input2 is saved as a member variable, Update() will not get called by the pipeline
+* - Input2 is 3d with the relevant axis dimension = 1. change to 2d?
+* - dimension along which to broadcast is set statically
+*/
+
 #ifndef __BroadcastingBinaryFunctorImageFilter_h_
 #define __BroadcastingBinaryFunctorImageFilter_h_
 
@@ -80,6 +87,7 @@ namespace itk {
         void operator=(const Self &);                       //purposely not implemented
 
         FunctorType m_Functor;
+        typename TInputImage2::Pointer m_Input2;
     };
 } //namespace ITK
 
