@@ -10,6 +10,7 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "itkMaximumImageFilter.h"
 #include "itkGetAverageSliceImageFilter.h"
+#include "BroadcastingBinaryFunctorImageFilter.h"
 
 #include "DescoteauxSheetnessImageFilter.h"
 #include "KrcahSheetnessImageFilter.h"
@@ -37,6 +38,8 @@ typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
 typedef itk::KrcahSheetnessImageFilter<EigenValueImageType, OutputImageType> SheetnessFilter;
+typedef itk::Functor::KrcahSheetness<EigenValueImageType::PixelType, OutputImageType::PixelType> SheetnessFunctor;
+typedef itk::BroadcastingBinaryFunctorImageFilter<EigenValueImageType, InternalImageType, OutputImageType, SheetnessFunctor> SheetnessBroadcastingFilterType;
 typedef itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType> RescaleFilterType;
 typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 typedef itk::Functor::Maximum<OutputImageType::PixelType, OutputImageType::PixelType, OutputImageType::PixelType> MaximumFunctorType;
