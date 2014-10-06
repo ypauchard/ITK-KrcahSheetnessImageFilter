@@ -23,7 +23,7 @@ namespace itk {
             }
 
             bool operator==(const KrcahSheetness &other) const {
-                return !(*this != other);
+                return (*this == other);
             }
 
             inline TOutput operator()(const TInput &A, const typename TTrace::PixelType T) {
