@@ -1,4 +1,5 @@
 #include "itkImageSliceConstIteratorWithIndex.h"
+#include "itkImageSliceIteratorWithIndex.h"
 
 namespace itk {
     template<typename TInputImage1, typename TInputImage2, typename TOutputImage, typename TFunctor>
@@ -31,7 +32,7 @@ namespace itk {
         // We use dynamic_cast since inputs are stored as DataObjects.  The ImageToImageFilter::GetInput(int)
         // always returns a pointer to a TInputImage1 so it cannot be used for the second input.
         const TInputImage1 *inputPtr1 = dynamic_cast< const TInputImage1 * >( ProcessObject::GetInput(0) );
-        const TInputImage2 *inputPtr2 = dynamic_cast< const TInputImage2 * >( ProcessObject::GetInput(1) );
+        TInputImage2 *inputPtr2 = dynamic_cast< TInputImage2 * >( ProcessObject::GetInput(1) );
         TOutputImage *outputPtr = this->GetOutput(0);
 
         // abort if task is empty
@@ -45,7 +46,7 @@ namespace itk {
 
         ImageSliceConstIteratorWithIndex<TInputImage1> inputIt1(inputPtr1, outputRegionForThread);
         ImageRegionIterator<TInputImage2> inputIt2(inputPtr2, outputRegionForThread);
-        ImageSliceConstIteratorWithIndex<TOutputImage> outputIt(outputPtr, outputRegionForThread);
+        ImageSliceIteratorWithIndex<TOutputImage> outputIt(outputPtr, outputRegionForThread);
 
         ProgressReporter progress(this, threadId, numberOfLinesToProcess);
 

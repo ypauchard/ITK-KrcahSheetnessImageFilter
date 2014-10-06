@@ -13,7 +13,7 @@
 #include "BroadcastingBinaryFunctorImageFilter.h"
 
 #include "DescoteauxSheetnessImageFilter.h"
-#include "KrcahSheetnessImageFilter.h"
+#include "KrcahSheetnessFunctor.h"
 #include "TraceImageFilter.h"
 
 // pixel / image type
@@ -27,21 +27,24 @@ typedef itk::Image<OutputPixelType, IMAGE_DIMENSION> OutputImageType;
 typedef itk::ImageFileReader<InputImageType> FileReaderType;
 typedef itk::ImageFileWriter<OutputImageType> FileWriterType;
 
-// filters
+// pre processing
 typedef itk::CurvatureAnisotropicDiffusionImageFilter<InputImageType, InternalImageType> DiffusionFilterType;
 typedef itk::HessianRecursiveGaussianImageFilter<InternalImageType> HessianFilterType;
 typedef HessianFilterType::OutputImageType HessianImageType;
 typedef HessianImageType::PixelType HessianPixelType;
 typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
+typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 typedef itk::GetAverageSliceImageFilter<InternalImageType, InternalImageType> AverageSliceFilterType;
 typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType;
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
-typedef itk::KrcahSheetnessImageFilter<EigenValueImageType, OutputImageType> SheetnessFilter;
+
+// sheetness
 typedef itk::Functor::KrcahSheetness<EigenValueImageType::PixelType, OutputImageType::PixelType> SheetnessFunctor;
 typedef itk::BroadcastingBinaryFunctorImageFilter<EigenValueImageType, InternalImageType, OutputImageType, SheetnessFunctor> SheetnessBroadcastingFilterType;
+
+// post processing
 typedef itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType> RescaleFilterType;
-typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 typedef itk::Functor::Maximum<OutputImageType::PixelType, OutputImageType::PixelType, OutputImageType::PixelType> MaximumFunctorType;
 typedef itk::BinaryFunctorImageFilter<OutputImageType, OutputImageType, OutputImageType, MaximumFunctorType> MaximumFilterType;
 
@@ -111,12 +114,8 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     m_TraceFilter->SetDimension(IMAGE_DIMENSION);
     AverageSliceFilterType::Pointer m_AverageSliceFilter = AverageSliceFilterType::New();
 
-    // sheetness
-    SheetnessFilter::Pointer m_SheetnessFilter = SheetnessFilter::New();
-    m_SheetnessFilter->SetSheetnessNormalization(0.5); // = alpha
-    m_SheetnessFilter->SetBloobinessNormalization(0.5); // = beta
-    m_SheetnessFilter->SetNoiseNormalization(0.25); // = gamma
-    m_SheetnessFilter->SetDetectBrightSheets(true);
+    // Sheetness
+    SheetnessBroadcastingFilterType::Pointer m_SheetnessFilter = SheetnessBroadcastingFilterType::New();
 
     // abs
     AbsFilterType::Pointer m_AbsFilter = AbsFilterType::New();
@@ -132,7 +131,10 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     m_EigenAnalysisFilter->SetInput(m_HessianFilter->GetOutput());
     m_TraceFilter->SetInput(m_HessianFilter->GetOutput());
     m_AverageSliceFilter->SetInput(m_TraceFilter->GetOutput());
-    m_SheetnessFilter->SetInput(m_EigenAnalysisFilter->GetOutput());
+
+    m_SheetnessFilter->SetInput1(m_EigenAnalysisFilter->GetOutput());
+    m_SheetnessFilter->SetInput2(m_AverageSliceFilter->GetOutput());
+
     m_AbsFilter->SetInput(m_SheetnessFilter->GetOutput());
     m_RescaleFilter->SetInput(m_AbsFilter->GetOutput());
 
