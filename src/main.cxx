@@ -4,6 +4,10 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
 #include "itkImageSpatialObject.h"
+#include "itkDiscreteGaussianImageFilter.h"
+#include "itkSubtractImageFilter.h"
+#include "itkMultiplyImageFilter.h"
+#include "itkAddImageFilter.h"
 #include "itkHessianRecursiveGaussianImageFilter.h"
 #include "itkSymmetricEigenAnalysisImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
@@ -29,7 +33,11 @@ typedef itk::ImageFileReader<InputImageType> FileReaderType;
 typedef itk::ImageFileWriter<OutputImageType> FileWriterType;
 
 // input processing
-typedef itk::CurvatureAnisotropicDiffusionImageFilter<InputImageType, InternalImageType> DiffusionFilterType;
+typedef itk::CurvatureAnisotropicDiffusionImageFilter<InputImageType, InternalImageType> AnisotropicDiffusionFilterType;
+typedef itk::DiscreteGaussianImageFilter<InputImageType, InternalImageType> GaussianFilterType;
+typedef itk::SubtractImageFilter<InputImageType, InternalImageType, InternalImageType> SubstractFilterType;
+typedef itk::MultiplyImageFilter<InternalImageType, InternalImageType, InternalImageType> MultiplyFilterType;
+typedef itk::AddImageFilter<InputImageType, InternalImageType, InternalImageType> AddFilterType;
 
 // sheetness prerequisites
 typedef itk::HessianRecursiveGaussianImageFilter<InternalImageType> HessianFilterType;
@@ -100,25 +108,70 @@ int process(char *inputPath, char *outputPath) {
 OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, float sigma) {
     std::cout << "CPU time (in s):" << std::endl;
 
+    /******
+    * Input preprocessing
+    ******/
     std::clock_t begin = std::clock();
 
-    // anisotropic diffusion
-    DiffusionFilterType::Pointer m_DiffusionFilter = DiffusionFilterType::New();
-    m_DiffusionFilter->SetNumberOfIterations(10);
-    m_DiffusionFilter->SetTimeStep(0.06);
-    m_DiffusionFilter->SetConductanceParameter(2.0);
+    // I*G (anisotropic diffusion)
+//    AnisotropicDiffusionFilterType::Pointer m_DiffusionFilter = AnisotropicDiffusionFilterType::New();
+//    m_DiffusionFilter->SetNumberOfIterations(10);
+//    m_DiffusionFilter->SetTimeStep(0.06);
+//    m_DiffusionFilter->SetConductanceParameter(10);
+//    m_DiffusionFilter->SetInput(input);
+//    m_DiffusionFilter->Update();
+
+    // I*G (discrete gauss)
+    GaussianFilterType::Pointer m_DiffusionFilter = GaussianFilterType::New();
+    m_DiffusionFilter->SetVariance(1);
     m_DiffusionFilter->SetInput(input);
     m_DiffusionFilter->Update();
 
     std::clock_t end = std::clock();
     double elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "Anisotropic diffusion: " << elapsedSecs << std::endl;
+    std::cout << "diffusion: " << elapsedSecs << std::endl;
     begin = std::clock();
 
+    // I - (I*G)
+    SubstractFilterType::Pointer m_SubstractFilter = SubstractFilterType::New();
+    m_SubstractFilter->SetInput1(input);
+    m_SubstractFilter->SetInput2(m_DiffusionFilter->GetOutput()); // =s
+    m_SubstractFilter->Update();
+
+    end = std::clock();
+    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
+    std::cout << "substract: " << elapsedSecs << std::endl;
+    begin = std::clock();
+
+    // k(I-(I*G))
+    MultiplyFilterType::Pointer m_MultiplyFilter = MultiplyFilterType::New();
+    m_MultiplyFilter->SetInput(m_SubstractFilter->GetOutput());
+    m_MultiplyFilter->SetConstant(10); // =k
+    m_MultiplyFilter->Update();
+
+    end = std::clock();
+    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
+    std::cout << "multiply: " << elapsedSecs << std::endl;
+    begin = std::clock();
+
+    // I+k*(I-(I*G))
+    AddFilterType::Pointer m_AddFilter = AddFilterType::New();
+    m_AddFilter->SetInput1(input);
+    m_AddFilter->SetInput2(m_MultiplyFilter->GetOutput());
+    m_AddFilter->Update();
+
+    end = std::clock();
+    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
+    std::cout << "add: " << elapsedSecs << std::endl;
+    begin = std::clock();
+
+    /******
+    * sheetness prerequisites
+    ******/
     // hessian
     HessianFilterType::Pointer m_HessianFilter = HessianFilterType::New();
     m_HessianFilter->SetSigma(sigma);
-    m_HessianFilter->SetInput(m_DiffusionFilter->GetOutput());
+    m_HessianFilter->SetInput(m_AddFilter->GetOutput());
     m_HessianFilter->Update();
 
     end = std::clock();
@@ -137,7 +190,7 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     std::cout << "Eigen analysis: " << elapsedSecs << std::endl;
     begin = std::clock();
 
-    // calculate average trace
+    // calculate trace
     TraceFilterType::Pointer m_TraceFilter = TraceFilterType::New();
     m_TraceFilter->SetImageDimension(IMAGE_DIMENSION);
     m_TraceFilter->SetInput(m_HessianFilter->GetOutput());
@@ -148,6 +201,7 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     std::cout << "Trace: " << elapsedSecs << std::endl;
     begin = std::clock();
 
+    // calculate average
     MeanProjectionFilterType::Pointer m_MeanProjectionFilter = MeanProjectionFilterType::New();
     m_MeanProjectionFilter->SetProjectionDimension(2);
     m_MeanProjectionFilter->SetInput(m_TraceFilter->GetOutput());
@@ -158,7 +212,9 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     std::cout << "Mean projection: " << elapsedSecs << std::endl;
     begin = std::clock();
 
-    // Sheetness
+    /******
+    * Sheetness
+    ******/
     SheetnessBroadcastingFilterType::Pointer m_SheetnessFilter = SheetnessBroadcastingFilterType::New();
     m_SheetnessFilter->SetInput1(m_EigenAnalysisFilter->GetOutput());
     m_SheetnessFilter->SetInput2(m_MeanProjectionFilter->GetOutput());
@@ -169,6 +225,9 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     std::cout << "Sheetness: " << elapsedSecs << std::endl;
     begin = std::clock();
 
+    /******
+    * Post processing
+    ******/
     // abs
     AbsFilterType::Pointer m_AbsFilter = AbsFilterType::New();
     m_AbsFilter->SetInput(m_SheetnessFilter->GetOutput());
