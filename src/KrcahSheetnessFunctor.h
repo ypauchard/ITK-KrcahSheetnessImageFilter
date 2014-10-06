@@ -4,7 +4,7 @@
 
 namespace itk {
     namespace Functor {
-        template<class TInput, class TOutput>
+        template<class TInput, class TTrace, class TOutput>
         class KrcahSheetness {
         public:
             KrcahSheetness() {
@@ -26,7 +26,7 @@ namespace itk {
                 return !(*this != other);
             }
 
-            inline TOutput operator()(const TInput &A, const TOutput T) {
+            inline TOutput operator()(const TInput &A, const typename TTrace::PixelType T) {
                 double sheetness = 0.0;
                 double a1 = static_cast<double>( A[0] );
                 double a2 = static_cast<double>( A[1] );
