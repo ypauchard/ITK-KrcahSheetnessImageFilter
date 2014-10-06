@@ -9,8 +9,8 @@
 #include "itkAbsImageFilter.h"
 #include "itkBinaryFunctorImageFilter.h"
 #include "itkMaximumImageFilter.h"
-#include "itkGetAverageSliceImageFilter.h"
 #include "BroadcastingBinaryFunctorImageFilter.h"
+#include "itkMeanProjectionImageFilter.h"
 
 #include "DescoteauxSheetnessImageFilter.h"
 #include "KrcahSheetnessFunctor.h"
@@ -34,7 +34,7 @@ typedef HessianFilterType::OutputImageType HessianImageType;
 typedef HessianImageType::PixelType HessianPixelType;
 typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
 typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
-typedef itk::GetAverageSliceImageFilter<InternalImageType, InternalImageType> AverageSliceFilterType;
+typedef itk::MeanProjectionImageFilter<InternalImageType, InternalImageType> MeanProjectionFilterType;
 typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType;
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
@@ -112,8 +112,9 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     // calculate average trace
     TraceFilterType::Pointer m_TraceFilter = TraceFilterType::New();
     m_TraceFilter->SetDimension(IMAGE_DIMENSION);
-    AverageSliceFilterType::Pointer m_AverageSliceFilter = AverageSliceFilterType::New();
-    m_AverageSliceFilter->SetAveragedOutDimension(2);
+
+    MeanProjectionFilterType::Pointer m_MeanProjectionFilter = MeanProjectionFilterType::New();
+    m_MeanProjectionFilter->SetProjectionDimension(2);
 
     // Sheetness
     SheetnessBroadcastingFilterType::Pointer m_SheetnessFilter = SheetnessBroadcastingFilterType::New();
@@ -131,10 +132,10 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     m_HessianFilter->SetInput(m_DiffusionFilter->GetOutput());
     m_EigenAnalysisFilter->SetInput(m_HessianFilter->GetOutput());
     m_TraceFilter->SetInput(m_HessianFilter->GetOutput());
-    m_AverageSliceFilter->SetInput(m_TraceFilter->GetOutput());
+    m_MeanProjectionFilter->SetInput(m_TraceFilter->GetOutput());
 
     m_SheetnessFilter->SetInput1(m_EigenAnalysisFilter->GetOutput());
-    m_SheetnessFilter->SetInput2(m_AverageSliceFilter->GetOutput());
+    m_SheetnessFilter->SetInput2(m_MeanProjectionFilter->GetOutput());
 
     m_AbsFilter->SetInput(m_SheetnessFilter->GetOutput());
     m_RescaleFilter->SetInput(m_AbsFilter->GetOutput());
