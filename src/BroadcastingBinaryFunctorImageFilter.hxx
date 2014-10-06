@@ -5,7 +5,7 @@ namespace itk {
     template<typename TInputImage1, typename TInputImage2, typename TOutputImage, typename TFunctor>
     BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage, TFunctor>
     ::BroadcastingBinaryFunctorImageFilter() {
-        this->SetNumberOfRequiredInputs(1);
+        this->SetNumberOfRequiredInputs(2);
         this->InPlaceOff();
     }
 
@@ -21,17 +21,20 @@ namespace itk {
     void
     BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage, TFunctor>
     ::SetInput2(const TInputImage2 *image2) {
-        // while ImageToImageFilter supports multiple inputs, it enforces the policy that all inputs occupy the same
-        // physical space. since this is not the case here, we create a member variable on handle it ourselves
-        m_Input2 = const_cast< TInputImage2 * >( image2 );
+        // we will use the multiple input system provided by ImageToImageFilter to ensure all pipeline
+        // functionality works as expected. however, ImageToImageFilter expects all images to be of the
+        // same size! we have to override certain functions to make it work, namely VerifyInputInformation()
+        // and GenerateInputRequestedRegion().
+        this->SetNthInput(1, const_cast< TInputImage2 * >( image2 ));
     }
 
     template<typename TInputImage1, typename TInputImage2, typename TOutputImage, typename TFunctor>
     void
     BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage, TFunctor>
     ::ThreadedGenerateData(const OutputImageRegionType &outputRegionForThread, ThreadIdType threadId) {
-        const TInputImage1 *inputPtr1 = this->GetInput(0);
-        const typename TInputImage2::Pointer inputPtr2 = m_Input2;
+        const TInputImage1 *inputPtr1 = dynamic_cast< const TInputImage1 * >( ProcessObject::GetInput(0) );
+        const TInputImage2 *inputPtr2 = dynamic_cast< const TInputImage2 * >( ProcessObject::GetInput(1) );
+
         TOutputImage *outputPtr = this->GetOutput(0);
 
         // abort if task is empty
@@ -47,11 +50,12 @@ namespace itk {
         ImageRegionConstIteratorWithIndex<TInputImage2> inputIt2(inputPtr2, inputPtr2->GetLargestPossibleRegion());
         ImageSliceIteratorWithIndex<TOutputImage> outputIt(outputPtr, outputRegionForThread);
 
+        // TODO: replace the static definition of the 'flat' plane with something that works in every case
         inputIt1.SetFirstDirection(0);
         inputIt1.SetSecondDirection(1);
         inputIt1.GoToBegin();
         typename TInputImage1::IndexType idxIt1 = inputIt1.GetIndex();
-        idxIt1[2] = 1;
+        idxIt1[2] = 0; // TODO: replace static dimension
         inputIt2.SetIndex(idxIt1);
 
         ProgressReporter progress(this, threadId, numberOfLinesToProcess);
@@ -71,6 +75,27 @@ namespace itk {
             outputIt.NextSlice();
             inputIt2.SetIndex(idxIt1);
         }
+    }
+
+    template<typename TInputImage1, typename TInputImage2, typename TOutputImage, typename TFunctor>
+    void
+    BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage, TFunctor>
+    ::VerifyInputInformation() {
+        // itkImageToImageFilter.hxx implements a check for identical physical space which obviously
+        // fails with this filter, so we overwrite it
+    }
+
+    template<typename TInputImage1, typename TInputImage2, typename TOutputImage, typename TFunctor>
+    void
+    BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage, TFunctor>
+    ::GenerateInputRequestedRegion() {
+        Superclass::GenerateInputRequestedRegion();
+
+        // the previously called itkImageToImageFilter.hxx implementation of this method sets the requested region
+        // for all inputs to the output request region. again, this fails in this filer since our 2nd input differs
+        // in size.
+        TInputImage2 *inputPtr2 = dynamic_cast< TInputImage2 * >( ProcessObject::GetInput(1) );
+        inputPtr2->SetRequestedRegion(inputPtr2->GetLargestPossibleRegion());
     }
 
 }

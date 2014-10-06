@@ -1,6 +1,5 @@
 /**
 * TODO:
-* - Because input2 is saved as a member variable, Update() will not get called by the pipeline
 * - Input2 is 3d with the relevant axis dimension = 1. change to 2d?
 * - dimension along which to broadcast is set statically
 */
@@ -82,12 +81,15 @@ namespace itk {
         void ThreadedGenerateData(const OutputImageRegionType &outputRegionForThread,
                 ThreadIdType threadId);
 
+        void VerifyInputInformation();
+
+        void GenerateInputRequestedRegion();
+
     private:
         BroadcastingBinaryFunctorImageFilter(const Self &); //purposely not implemented
         void operator=(const Self &);                       //purposely not implemented
 
         FunctorType m_Functor;
-        typename TInputImage2::Pointer m_Input2;
     };
 } //namespace ITK
 
