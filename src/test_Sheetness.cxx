@@ -13,7 +13,7 @@ TEST(TraceFunctor, double2x2) {
 
     a(0, 0) = 1.0;
     a(1, 1) = 2.0;
-    trace.SetDimension(2);
+    trace.SetImageDimension(2);
     InternalPixelType traceValue = trace(a);
     ASSERT_DOUBLE_EQ(traceValue, 3.0);
 
@@ -63,7 +63,7 @@ TEST(TraceFunctor, double3x3) {
     a(0, 0) = 1.0;
     a(1, 1) = 2.0;
     a(2, 2) = 3.0;
-    trace.SetDimension(3);
+    trace.SetImageDimension(3);
     InternalPixelType traceValue = trace(a);
     ASSERT_DOUBLE_EQ(traceValue, 6.0);
 }
@@ -80,7 +80,7 @@ TEST(TraceFunctor, double99x99) {
         a(index, index) = index;
     }
 
-    trace.SetDimension(DIMENSION);
+    trace.SetImageDimension(DIMENSION);
     InternalPixelType traceValue = trace(a);
     ASSERT_DOUBLE_EQ(traceValue, ((DIMENSION - 1) * ((DIMENSION - 1) + 1) / 2));
 }
@@ -95,7 +95,7 @@ TEST(TraceFunctor, int3x3) {
     a(0, 0) = 1;
     a(1, 1) = 2;
     a(2, 2) = 3;
-    trace.SetDimension(3);
+    trace.SetImageDimension(3);
     InternalPixelType traceValue = trace(a);
     ASSERT_EQ(traceValue, 6);
 }
@@ -110,7 +110,7 @@ TEST(TraceFunctor, float3x3) {
     a(0, 0) = 1.1;
     a(1, 1) = 2.2;
     a(2, 2) = 3.3;
-    trace.SetDimension(3);
+    trace.SetImageDimension(3);
     InternalPixelType traceValue = trace(a);
     ASSERT_FLOAT_EQ(traceValue, 6.6);
 }

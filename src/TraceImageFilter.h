@@ -19,16 +19,14 @@ namespace itk {
             };
 
             inline TOutput operator()(const TInput &A) {
-                double sum = 0.0; // calculate with double precision
+                TOutput sum = 0.0;
                 for (unsigned int index = 0; index < m_Dimension; index++) {
                     sum += A(index, index);
                 }
-
-                TOutput traceValue(sum);
-                return traceValue;
+                return sum;
             }
 
-            void SetDimension(unsigned int n) {
+            void SetImageDimension(unsigned int n) {
                 m_Dimension = n;
             }
 
@@ -56,12 +54,8 @@ namespace itk {
         itkTypeMacro(TraceImageFilter, UnaryFunctorImageFilter); // type information for runtime evaluation
 
         // methods
-        void SetDimension(unsigned int n) {
-            this->GetFunctor().SetDimension(n);
-        }
-
-        unsigned int GetDimension() {
-            return this->GetFunctor().GetDimension();
+        void SetImageDimension(unsigned int n) {
+            this->GetFunctor().SetImageDimension(n);
         }
 
 #ifdef ITK_USE_CONCEPT_CHECKING

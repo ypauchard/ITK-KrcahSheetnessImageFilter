@@ -9,10 +9,9 @@
 #include "itkAbsImageFilter.h"
 #include "itkBinaryFunctorImageFilter.h"
 #include "itkMaximumImageFilter.h"
-#include "BroadcastingBinaryFunctorImageFilter.h"
 #include "itkMeanProjectionImageFilter.h"
 
-#include "DescoteauxSheetnessImageFilter.h"
+#include "BroadcastingBinaryFunctorImageFilter.h"
 #include "KrcahSheetnessFunctor.h"
 #include "TraceImageFilter.h"
 
@@ -33,7 +32,6 @@ typedef itk::HessianRecursiveGaussianImageFilter<InternalImageType> HessianFilte
 typedef HessianFilterType::OutputImageType HessianImageType;
 typedef HessianImageType::PixelType HessianPixelType;
 typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
-typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 typedef itk::MeanProjectionImageFilter<InternalImageType, InternalImageType> MeanProjectionFilterType;
 typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType;
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
@@ -44,6 +42,7 @@ typedef itk::Functor::KrcahSheetness<EigenValueImageType::PixelType, MeanProject
 typedef itk::BroadcastingBinaryFunctorImageFilter<EigenValueImageType, InternalImageType, OutputImageType, SheetnessFunctor> SheetnessBroadcastingFilterType;
 
 // post processing
+typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 typedef itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType> RescaleFilterType;
 typedef itk::Functor::Maximum<OutputImageType::PixelType, OutputImageType::PixelType, OutputImageType::PixelType> MaximumFunctorType;
 typedef itk::BinaryFunctorImageFilter<OutputImageType, OutputImageType, OutputImageType, MaximumFunctorType> MaximumFilterType;
@@ -111,7 +110,7 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
 
     // calculate average trace
     TraceFilterType::Pointer m_TraceFilter = TraceFilterType::New();
-    m_TraceFilter->SetDimension(IMAGE_DIMENSION);
+    m_TraceFilter->SetImageDimension(IMAGE_DIMENSION);
 
     MeanProjectionFilterType::Pointer m_MeanProjectionFilter = MeanProjectionFilterType::New();
     m_MeanProjectionFilter->SetProjectionDimension(2);
