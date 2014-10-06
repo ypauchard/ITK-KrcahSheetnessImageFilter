@@ -40,7 +40,7 @@ typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
 
 // sheetness
-typedef itk::Functor::KrcahSheetness<EigenValueImageType::PixelType, AverageSliceFilterType::OutputImageType, OutputImageType::PixelType> SheetnessFunctor;
+typedef itk::Functor::KrcahSheetness<EigenValueImageType::PixelType, MeanProjectionFilterType::OutputImageType, OutputImageType::PixelType> SheetnessFunctor;
 typedef itk::BroadcastingBinaryFunctorImageFilter<EigenValueImageType, InternalImageType, OutputImageType, SheetnessFunctor> SheetnessBroadcastingFilterType;
 
 // post processing

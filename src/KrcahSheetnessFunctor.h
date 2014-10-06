@@ -1,3 +1,6 @@
+#ifndef __KrcahSheetnessFunctor_h_
+#define __KrcahSheetnessFunctor_h_
+
 #include "itkUnaryFunctorImageFilter.h"
 #include "vnl/vnl_math.h"
 #include <algorithm>
@@ -108,3 +111,5 @@ namespace itk {
         };
     }
 }
+
+#endif // __KrcahSheetnessFunctor_h_
