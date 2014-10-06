@@ -6,7 +6,6 @@ namespace itk {
     BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage, TFunctor>
     ::BroadcastingBinaryFunctorImageFilter() {
         this->SetNumberOfRequiredInputs(2);
-        this->InPlaceOff();
     }
 
     template<typename TInputImage1, typename TInputImage2, typename TOutputImage, typename TFunctor>
@@ -34,8 +33,7 @@ namespace itk {
     ::ThreadedGenerateData(const OutputImageRegionType &outputRegionForThread, ThreadIdType threadId) {
         const TInputImage1 *inputPtr1 = dynamic_cast< const TInputImage1 * >( ProcessObject::GetInput(0) );
         const TInputImage2 *inputPtr2 = dynamic_cast< const TInputImage2 * >( ProcessObject::GetInput(1) );
-
-        TOutputImage *outputPtr = this->GetOutput(0);
+        TOutputImage *outputPtr = this->GetOutput();
 
         // abort if task is empty
         const SizeValueType size0 = outputRegionForThread.GetSize(0);
@@ -48,12 +46,14 @@ namespace itk {
 
         ImageSliceConstIteratorWithIndex<TInputImage1> inputIt1(inputPtr1, outputRegionForThread);
         ImageRegionConstIteratorWithIndex<TInputImage2> inputIt2(inputPtr2, inputPtr2->GetLargestPossibleRegion());
-        ImageSliceIteratorWithIndex<TOutputImage> outputIt(outputPtr, outputRegionForThread);
+        ImageRegionIterator<TOutputImage> outputIt(outputPtr, outputRegionForThread);
 
         // TODO: replace the static definition of the 'flat' plane with something that works in every case
         inputIt1.SetFirstDirection(0);
         inputIt1.SetSecondDirection(1);
         inputIt1.GoToBegin();
+
+        outputIt.GoToBegin();
         typename TInputImage1::IndexType idxIt1 = inputIt1.GetIndex();
         idxIt1[2] = 0; // TODO: replace static dimension
         inputIt2.SetIndex(idxIt1);
@@ -68,11 +68,9 @@ namespace itk {
                     ++outputIt;
                 }
                 inputIt1.NextLine();
-                outputIt.NextLine();
                 progress.CompletedPixel();
             }
             inputIt1.NextSlice();
-            outputIt.NextSlice();
             inputIt2.SetIndex(idxIt1);
         }
     }
@@ -96,6 +94,21 @@ namespace itk {
         // in size.
         TInputImage2 *inputPtr2 = dynamic_cast< TInputImage2 * >( ProcessObject::GetInput(1) );
         inputPtr2->SetRequestedRegion(inputPtr2->GetLargestPossibleRegion());
+    }
+
+    template<typename TInputImage1, typename TInputImage2, typename TOutputImage, typename TFunctor>
+    void
+    BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage, TFunctor>
+    ::GenerateOutputInformation() {
+        const DataObject *input = ITK_NULLPTR;
+        Input1ImagePointer inputPtr1 = dynamic_cast< const TInputImage1 * >( ProcessObject::GetInput(0) );
+
+        for (unsigned int idx = 0; idx < this->GetNumberOfOutputs(); ++idx) {
+            DataObject *output = this->GetOutput(idx);
+            if (output) {
+                output->CopyInformation(inputPtr1);
+            }
+        }
     }
 
 }

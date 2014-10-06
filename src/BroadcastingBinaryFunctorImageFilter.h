@@ -7,15 +7,15 @@
 #ifndef __BroadcastingBinaryFunctorImageFilter_h_
 #define __BroadcastingBinaryFunctorImageFilter_h_
 
-#include "itkInPlaceImageFilter.h"
+#include "itkImageToImageFilter.h"
 
 namespace itk {
     template<typename TInputImage1, typename TInputImage2, typename TOutputImage, typename TFunctor>
-    class BroadcastingBinaryFunctorImageFilter : public InPlaceImageFilter<TInputImage1, TOutputImage> {
+    class BroadcastingBinaryFunctorImageFilter : public ImageToImageFilter<TInputImage1, TOutputImage> {
     public:
         /** Standard class typedefs. */
         typedef BroadcastingBinaryFunctorImageFilter Self;
-        typedef InPlaceImageFilter<TInputImage1, TOutputImage> Superclass;
+        typedef ImageToImageFilter<TInputImage1, TOutputImage> Superclass;
         typedef SmartPointer<Self> Pointer;
         typedef SmartPointer<const Self> ConstPointer;
 
@@ -23,7 +23,7 @@ namespace itk {
         itkNewMacro(Self);
 
         /** Run-time type information (and related methods). */
-        itkTypeMacro(ImageFilterMultipleInputs, ImageToImageFilter);
+        itkTypeMacro(BroadcastingBinaryFunctorImageFilter, ImageToImageFilter);
 
         /** Some convenient typedefs. */
         typedef TFunctor FunctorType;
@@ -82,8 +82,9 @@ namespace itk {
                 ThreadIdType threadId);
 
         void VerifyInputInformation();
-
         void GenerateInputRequestedRegion();
+
+        virtual void GenerateOutputInformation();
 
     private:
         BroadcastingBinaryFunctorImageFilter(const Self &); //purposely not implemented
