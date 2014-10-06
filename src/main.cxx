@@ -13,7 +13,6 @@
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkCurvatureAnisotropicDiffusionImageFilter.h"
 #include "itkAbsImageFilter.h"
-#include "itkBinaryFunctorImageFilter.h"
 #include "itkMaximumImageFilter.h"
 #include "itkMeanProjectionImageFilter.h"
 
@@ -106,7 +105,7 @@ int process(char *inputPath, char *outputPath) {
     std::cout << "writing to file..." << std::endl;
     FileWriterType::Pointer writer = FileWriterType::New();
     writer->SetFileName(outputPath);
-    writer->SetInput(resultSigma075Krcah);
+    writer->SetInput(m_MaximumFilter->GetOutput());
     writer->Update();
 
     return EXIT_SUCCESS;
@@ -122,9 +121,9 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
 
     // I*G (anisotropic diffusion)
 //    AnisotropicDiffusionFilterType::Pointer m_DiffusionFilter = AnisotropicDiffusionFilterType::New();
-//    m_DiffusionFilter->SetNumberOfIterations(10);
+//    m_DiffusionFilter->SetNumberOfIterations(20);
 //    m_DiffusionFilter->SetTimeStep(0.06);
-//    m_DiffusionFilter->SetConductanceParameter(10);
+//    m_DiffusionFilter->SetConductanceParameter(50);
 //    m_DiffusionFilter->SetInput(input);
 //    m_DiffusionFilter->Update();
 
