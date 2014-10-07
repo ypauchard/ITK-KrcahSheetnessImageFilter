@@ -53,7 +53,7 @@ namespace itk {
         itkNewMacro(Self); // create the smart pointers and register with ITKs object factory
         itkTypeMacro(TraceImageFilter, UnaryFunctorImageFilter); // type information for runtime evaluation
 
-        // methods
+        // member functions
         void SetImageDimension(unsigned int n) {
             this->GetFunctor().SetImageDimension(n);
         }

@@ -22,6 +22,27 @@ namespace itk {
         itkNewMacro(Self); // create the smart pointers and register with ITKs object factory
         itkTypeMacro(KrcahSheetnessImageFilter, BroadcastingBinaryFunctorImageFilter); // type information for runtime evaluation
 
+        // member functions
+        void SetAlpha(double value) {
+            this->GetFunctor().SetAlpha(value);
+        }
+
+        void SetBeta(double value) {
+            this->GetFunctor().SetBeta(value);
+        }
+
+        void SetGamma(double value) {
+            this->GetFunctor().SetGamma(value);
+        }
+
+        void SetDetectBrightSheets(bool value) {
+            this->GetFunctor().SetDetectBrightSheets(value);
+        }
+
+        void SetDetectDarkSheets(bool value) {
+            this->GetFunctor().SetDetectDarkSheets(value);
+        }
+
     protected:
         KrcahSheetnessImageFilter() {
         };
