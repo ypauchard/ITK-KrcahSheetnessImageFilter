@@ -1,26 +1,24 @@
 #ifndef __KrcahSheetnessImageFilter_h_
 #define __KrcahSheetnessImageFilter_h_
 
-#include "BroadcastingBinaryFunctorImageFilter.h"
+#include "itkBinaryFunctorImageFilter.h"
 #include "KrcahSheetnessFunctor.h"
 
 namespace itk {
-    template<typename TInputImage1, typename TInputImage2, typename TOutputImage>
+    template<typename TInputImage, typename TConstant, typename TOutputImage>
     class KrcahSheetnessImageFilter :
-            public BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage,
-                    Functor::KrcahSheetness<typename TInputImage1::PixelType,
-                            typename TInputImage2::PixelType, typename TOutputImage::PixelType> > {
+            public BinaryFunctorImageFilter<TInputImage, Image<TConstant, TInputImage::ImageDimension>, TOutputImage,
+                    Functor::KrcahSheetness<typename TInputImage::PixelType, TConstant, typename TOutputImage::PixelType> > {
     public:
         // itk requirements
         typedef KrcahSheetnessImageFilter Self;
-        typedef BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage,
-                Functor::KrcahSheetness<typename TInputImage1::PixelType,
-                        typename TInputImage2::PixelType, typename TOutputImage::PixelType> > Superclass;
+        typedef BinaryFunctorImageFilter<TInputImage, Image<TConstant, TInputImage::ImageDimension>, TOutputImage,
+                Functor::KrcahSheetness<typename TInputImage::PixelType, TConstant, typename TOutputImage::PixelType> > Superclass;
         typedef SmartPointer<Self> Pointer;
         typedef SmartPointer<const Self> ConstPointer;
 
         itkNewMacro(Self); // create the smart pointers and register with ITKs object factory
-        itkTypeMacro(KrcahSheetnessImageFilter, BroadcastingBinaryFunctorImageFilter); // type information for runtime evaluation
+        itkTypeMacro(KrcahSheetnessImageFilter, BinaryFunctorImageFilter); // type information for runtime evaluation
 
         // member functions
         void SetAlpha(double value) {

@@ -19,10 +19,9 @@
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkConnectedComponentImageFilter.h"
-#include <itkLabelToRGBImageFilter.h>
-#include <itkScalarConnectedComponentImageFilter.h>
-#include <itkRelabelComponentImageFilter.h>
-#include <itkLabelMapToBinaryImageFilter.h>
+#include "itkScalarConnectedComponentImageFilter.h"
+#include "itkRelabelComponentImageFilter.h"
+#include "itkStatisticsImageFilter.h"
 
 #include "KrcahSheetnessImageFilter.h"
 #include "TraceImageFilter.h"
@@ -54,9 +53,10 @@ typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
 typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
 typedef itk::MeanProjectionImageFilter<InternalImageType, InternalImageType> MeanProjectionFilterType;
+typedef itk::StatisticsImageFilter<InternalImageType> StatisticsFilterType;
 
 // sheetness
-typedef itk::KrcahSheetnessImageFilter<EigenValueImageType, MeanProjectionFilterType::OutputImageType, OutputImageType> SheetnessFilterType;
+typedef itk::KrcahSheetnessImageFilter<EigenValueImageType, double, OutputImageType> SheetnessFilterType;
 
 // post processing
 typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
@@ -65,11 +65,7 @@ typedef itk::BinaryFunctorImageFilter<OutputImageType, OutputImageType, OutputIm
 typedef itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType> RescaleFilterType;
 
 // femur connected components
-typedef itk::RGBPixel<unsigned char> RGBPixelType;
-typedef itk::Image<RGBPixelType, IMAGE_DIMENSION> RGBImageType;
 typedef itk::Image<unsigned long, IMAGE_DIMENSION> LabelImageType;
-typedef itk::ImageFileWriter<RGBImageType> RGBFileWriterType;
-typedef itk::Image<unsigned char, IMAGE_DIMENSION> BinaryImageType;
 typedef itk::ScalarConnectedComponentImageFilter<OutputImageType, LabelImageType> ConnectedComponentImageFilterType;
 typedef itk::RelabelComponentImageFilter<LabelImageType, LabelImageType> RelabelFilterType;
 typedef itk::BinaryThresholdImageFilter<LabelImageType, LabelImageType> BinaryThresholdFilterType;
@@ -82,7 +78,6 @@ int process(char *in, char *outputPathSheetness);
 FileReaderType::Pointer readImage(char *pathInput);
 
 OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, float sigma);
-
 OutputImageType::Pointer extractFemur(OutputImageType::Pointer input);
 
 // expected CLI call:
@@ -139,14 +134,6 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     std::cout << "CPU time (in s):" << std::endl;
     std::clock_t begin = std::clock();
     std::clock_t beginTotal = std::clock();
-
-    // I*G (anisotropic diffusion)
-//    AnisotropicDiffusionFilterType::Pointer m_DiffusionFilter = AnisotropicDiffusionFilterType::New();
-//    m_DiffusionFilter->SetNumberOfIterations(20);
-//    m_DiffusionFilter->SetTimeStep(0.06);
-//    m_DiffusionFilter->SetConductanceParameter(50);
-//    m_DiffusionFilter->SetInput(input);
-//    m_DiffusionFilter->Update();
 
     // I*G (discrete gauss)
     GaussianFilterType::Pointer m_DiffusionFilter = GaussianFilterType::New();
@@ -229,22 +216,21 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     begin = std::clock();
 
     // calculate average
-    MeanProjectionFilterType::Pointer m_MeanProjectionFilter = MeanProjectionFilterType::New();
-    m_MeanProjectionFilter->SetProjectionDimension(2);
-    m_MeanProjectionFilter->SetInput(m_TraceFilter->GetOutput());
-    m_MeanProjectionFilter->Update();
+    StatisticsFilterType::Pointer m_StatisticsFilter = StatisticsFilterType::New();
+    m_StatisticsFilter->SetInput(m_TraceFilter->GetOutput());
+    m_StatisticsFilter->Update();
 
     end = std::clock();
     elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "Mean projection: " << elapsedSecs << std::endl;
+    std::cout << "statistics: " << elapsedSecs << std::endl;
     begin = std::clock();
 
     /******
     * Sheetness
     ******/
     SheetnessFilterType::Pointer m_SheetnessFilter = SheetnessFilterType::New();
-    m_SheetnessFilter->SetInput1(m_EigenAnalysisFilter->GetOutput());
-    m_SheetnessFilter->SetInput2(m_MeanProjectionFilter->GetOutput());
+    m_SheetnessFilter->SetInput(m_EigenAnalysisFilter->GetOutput());
+    m_SheetnessFilter->SetConstant(m_StatisticsFilter->GetMean());
     m_SheetnessFilter->Update();
 
     end = std::clock();
