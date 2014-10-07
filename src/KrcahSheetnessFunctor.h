@@ -7,7 +7,7 @@
 
 namespace itk {
     namespace Functor {
-        template<class TInput, class TTrace, class TOutput>
+        template<class TInputPixel, class TTracePixel, class TOutputPixel>
         class KrcahSheetness {
         public:
             KrcahSheetness() {
@@ -29,7 +29,7 @@ namespace itk {
                 return (*this == other);
             }
 
-            inline TOutput operator()(const TInput &A, const typename TTrace::PixelType T) {
+            inline TOutputPixel operator()(const TInputPixel &A, const TTracePixel T) {
                 double sheetness = 0.0;
                 double a1 = static_cast<double>( A[0] );
                 double a2 = static_cast<double>( A[1] );
@@ -56,18 +56,18 @@ namespace itk {
 
                 if (this->m_DetectBrightSheets) {
                     if (a3 > 0.0) {
-                        return static_cast<TOutput>( sheetness );
+                        return static_cast<TOutputPixel>( sheetness );
                     }
                 }
                 else {
                     if (a3 < 0.0) {
-                        return static_cast<TOutput>( sheetness );
+                        return static_cast<TOutputPixel>( sheetness );
                     }
                 }
 
                 // Avoid divisions by zero (or close to zero)
                 if (static_cast<double>( l3 ) < vnl_math::eps || static_cast<double>( l2 ) < vnl_math::eps) {
-                    return static_cast<TOutput>( sheetness );
+                    return static_cast<TOutputPixel>( sheetness );
                 }
 
                 //const double T = l1 + l2 + l3; // http://en.wikipedia.org/wiki/Trace_%28linear_algebra%29#Eigenvalue_relationships
@@ -80,7 +80,7 @@ namespace itk {
                 sheetness *= vcl_exp(-(Rtube * Rtube) / (m_Beta * m_Beta));
                 sheetness *= (1.0 - vcl_exp(-(Rnoise * Rnoise) / (m_Gamma * m_Gamma)));
 
-                return static_cast<TOutput>( sheetness );
+                return static_cast<TOutputPixel>( sheetness );
             }
 
             void SetAlpha(double value) {
