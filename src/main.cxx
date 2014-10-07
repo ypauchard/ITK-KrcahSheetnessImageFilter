@@ -15,6 +15,7 @@
 #include "itkAbsImageFilter.h"
 #include "itkMaximumImageFilter.h"
 #include "itkMeanProjectionImageFilter.h"
+#include "itkRescaleIntensityImageFilter.h"
 
 #include "KrcahSheetnessImageFilter.h"
 #include "TraceImageFilter.h"
@@ -54,6 +55,9 @@ typedef itk::KrcahSheetnessImageFilter<EigenValueImageType, MeanProjectionFilter
 typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 typedef itk::Functor::Maximum<OutputPixelType, OutputPixelType, OutputPixelType> MaximumFunctorType;
 typedef itk::BinaryFunctorImageFilter<OutputImageType, OutputImageType, OutputImageType, MaximumFunctorType> MaximumFilterType;
+typedef itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType> RescaleFilterType;
+
+// label map
 
 // functions
 int process(char *in, char *out);
@@ -92,11 +96,17 @@ int process(char *inputPath, char *outputPath) {
     m_MaximumFilter->SetInput1(m_AbsFilter075->GetOutput());
     m_MaximumFilter->SetInput2(m_AbsFilter100->GetOutput());
 
+    // rescale to range 0.0 - 1.0
+    RescaleFilterType::Pointer m_RescaleFilter = RescaleFilterType::New();
+    m_RescaleFilter->SetOutputMinimum(0.0);
+    m_RescaleFilter->SetOutputMaximum(1.0);
+    m_RescaleFilter->SetInput(m_MaximumFilter->GetOutput());
+
     // write result
     std::cout << "writing to file..." << std::endl;
     FileWriterType::Pointer writer = FileWriterType::New();
     writer->SetFileName(outputPath);
-    writer->SetInput(m_MaximumFilter->GetOutput());
+    writer->SetInput(m_RescaleFilter->GetOutput());
     writer->Update();
 
     return EXIT_SUCCESS;
