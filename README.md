@@ -2,9 +2,9 @@
 Implementation of a sheetness image filter as described by Krcah et. al.
 
 ## Usage
-`./Testbench /path/to/input /path/to/output`
+`./KrcahSheetness /path/to/input /path/to/output`
 
-Example: `./Testbench ../data/pelvis.mhd ../data/out.mhd`
+Example: `./KrcahSheetness ../data/pelvis.mhd ../data/out.mhd`
 
 ## Build Instruction
 ```

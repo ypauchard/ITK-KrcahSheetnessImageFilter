@@ -12,7 +12,8 @@ namespace itk {
     void
     BroadcastingBinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage, TFunctor>
     ::SetInput1(const TInputImage1 *image1) {
-        // Process object is not const-correct so the const casting is required.
+        // for some reason ProcessObject::SetNthInput only accepts non-const DataObjects.
+        // So we have to cast it and hope for the best...
         this->SetNthInput(0, const_cast< TInputImage1 * >( image1 ));
     }
 
