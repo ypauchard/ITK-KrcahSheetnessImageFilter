@@ -16,8 +16,7 @@
 #include "itkMaximumImageFilter.h"
 #include "itkMeanProjectionImageFilter.h"
 
-#include "BroadcastingBinaryFunctorImageFilter.h"
-#include "KrcahSheetnessFunctor.h"
+#include "KrcahSheetnessImageFilter.h"
 #include "TraceImageFilter.h"
 
 // pixel / image type
@@ -42,21 +41,19 @@ typedef itk::AddImageFilter<InputImageType, InternalImageType, InternalImageType
 typedef itk::HessianRecursiveGaussianImageFilter<InternalImageType> HessianFilterType;
 typedef HessianFilterType::OutputImageType HessianImageType;
 typedef HessianImageType::PixelType HessianPixelType;
-typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
-typedef itk::MeanProjectionImageFilter<InternalImageType, InternalImageType> MeanProjectionFilterType;
 typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType;
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
+typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
+typedef itk::MeanProjectionImageFilter<InternalImageType, InternalImageType> MeanProjectionFilterType;
 
 // sheetness
-typedef itk::Functor::KrcahSheetness<EigenValueImageType::PixelType, MeanProjectionFilterType::OutputImageType::PixelType, InternalImageType::PixelType> SheetnessFunctor;
-typedef itk::BroadcastingBinaryFunctorImageFilter<EigenValueImageType, InternalImageType, OutputImageType, SheetnessFunctor> SheetnessBroadcastingFilterType;
+typedef itk::KrcahSheetnessImageFilter<EigenValueImageType, MeanProjectionFilterType::OutputImageType, OutputImageType> SheetnessFilterType;
 
 // post processing
+typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 typedef itk::Functor::Maximum<OutputPixelType, OutputPixelType, OutputPixelType> MaximumFunctorType;
 typedef itk::BinaryFunctorImageFilter<OutputImageType, OutputImageType, OutputImageType, MaximumFunctorType> MaximumFilterType;
-typedef itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType> RescaleFilterType;
-typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
 
 // functions
 int process(char *in, char *out);
@@ -94,12 +91,6 @@ int process(char *inputPath, char *outputPath) {
     MaximumFilterType::Pointer m_MaximumFilter = MaximumFilterType::New();
     m_MaximumFilter->SetInput1(m_AbsFilter075->GetOutput());
     m_MaximumFilter->SetInput2(m_AbsFilter100->GetOutput());
-
-    // rescale the resulting image
-    RescaleFilterType::Pointer m_RescaleFilter = RescaleFilterType::New();
-    m_RescaleFilter->SetOutputMinimum(0.0);
-    m_RescaleFilter->SetOutputMaximum(1.0);
-    m_RescaleFilter->SetInput(m_MaximumFilter->GetOutput());
 
     // write result
     std::cout << "writing to file..." << std::endl;
@@ -221,7 +212,7 @@ OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, 
     /******
     * Sheetness
     ******/
-    SheetnessBroadcastingFilterType::Pointer m_SheetnessFilter = SheetnessBroadcastingFilterType::New();
+    SheetnessFilterType::Pointer m_SheetnessFilter = SheetnessFilterType::New();
     m_SheetnessFilter->SetInput1(m_EigenAnalysisFilter->GetOutput());
     m_SheetnessFilter->SetInput2(m_MeanProjectionFilter->GetOutput());
     m_SheetnessFilter->Update();
