@@ -15,10 +15,7 @@ namespace itk {
             }
 
             inline TOutputPixel operator()(const TInputPixel1 A, const TInputPixel2 B) {
-                if (vnl_math_abs(A) >= vnl_math_abs(B)) {
-                    return static_cast<TOutputPixel>(A);
-                }
-                return static_cast<TOutputPixel>(B);
+                return static_cast<TOutputPixel>(vnl_math_abs(A) >= vnl_math_abs(B) ? A : B);
             }
         };
     } // namespace functor

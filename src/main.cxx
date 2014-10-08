@@ -13,16 +13,13 @@
 #include "itkSymmetricEigenAnalysisImageFilter.h"
 #include "itkRescaleIntensityImageFilter.h"
 #include "itkCurvatureAnisotropicDiffusionImageFilter.h"
-#include "itkAbsImageFilter.h"
-#include "itkMaximumImageFilter.h"
-#include "itkMeanProjectionImageFilter.h"
-#include "itkRescaleIntensityImageFilter.h"
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkConnectedComponentImageFilter.h"
 #include "itkScalarConnectedComponentImageFilter.h"
 #include "itkRelabelComponentImageFilter.h"
 #include "itkStatisticsImageFilter.h"
 
+#include "MaximumAbsoluteValueImageFilter.h"
 #include "KrcahSheetnessImageFilter.h"
 #include "TraceImageFilter.h"
 
@@ -52,17 +49,13 @@ typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType
 typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
 typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
 typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
-typedef itk::MeanProjectionImageFilter<InternalImageType, InternalImageType> MeanProjectionFilterType;
 typedef itk::StatisticsImageFilter<InternalImageType> StatisticsFilterType;
 
 // sheetness
 typedef itk::KrcahSheetnessImageFilter<EigenValueImageType, double, OutputImageType> SheetnessFilterType;
 
 // post processing
-typedef itk::AbsImageFilter<InternalImageType, InternalImageType> AbsFilterType;
-typedef itk::Functor::Maximum<OutputPixelType, OutputPixelType, OutputPixelType> MaximumFunctorType;
-typedef itk::BinaryFunctorImageFilter<OutputImageType, OutputImageType, OutputImageType, MaximumFunctorType> MaximumFilterType;
-typedef itk::RescaleIntensityImageFilter<OutputImageType, OutputImageType> RescaleFilterType;
+typedef itk::MaximumAbsoluteValueImageFilter<OutputImageType, OutputImageType, OutputImageType> MaximumAbsoluteValueFilterType;
 
 // femur connected components
 typedef itk::Image<unsigned long, IMAGE_DIMENSION> LabelImageType;
@@ -98,29 +91,18 @@ int process(char *inputPath, char *outputPathSheetness) {
     std::cout << "Processing with sigma=1.0..." << std::endl;
     OutputImageType::Pointer resultSigma100Krcah = calculateKrcahSheetness(input, 1.0);
 
-    // abs of both results
+    // combine the results
     std::cout << "combining results..." << std::endl;
-    AbsFilterType::Pointer m_AbsFilter075 = AbsFilterType::New();
-    AbsFilterType::Pointer m_AbsFilter100 = AbsFilterType::New();
-    m_AbsFilter075->SetInput(resultSigma075Krcah);
-    m_AbsFilter100->SetInput(resultSigma100Krcah);
-
-    // result(x,y) = max(abs(esultSigma075Krcah(x,y)), abs(resultSigma100Krcah(x,y)))
-    MaximumFilterType::Pointer m_MaximumFilter = MaximumFilterType::New();
-    m_MaximumFilter->SetInput1(m_AbsFilter075->GetOutput());
-    m_MaximumFilter->SetInput2(m_AbsFilter100->GetOutput());
-
-    // rescale to range 0.0 - 1.0
-    RescaleFilterType::Pointer m_RescaleFilter = RescaleFilterType::New();
-    m_RescaleFilter->SetOutputMinimum(0.0);
-    m_RescaleFilter->SetOutputMaximum(1.0);
-    m_RescaleFilter->SetInput(m_MaximumFilter->GetOutput());
+    MaximumAbsoluteValueFilterType::Pointer maximumAbsoluteValueFilter = MaximumAbsoluteValueFilterType::New();
+    maximumAbsoluteValueFilter->SetInput1(resultSigma075Krcah);
+    maximumAbsoluteValueFilter->SetInput2(resultSigma100Krcah);
+    maximumAbsoluteValueFilter->Update();
 
     // write sheetness result
     std::cout << "writing sheetness to file..." << std::endl;
     FileWriterType::Pointer writer = FileWriterType::New();
     writer->SetFileName(outputPathSheetness);
-    writer->SetInput(resultSigma100Krcah);
+    writer->SetInput(maximumAbsoluteValueFilter->GetOutput());
     writer->Update();
 
     return EXIT_SUCCESS;
