@@ -17,17 +17,6 @@ namespace itk {
                 m_Gamma = 0.25;
             }
 
-            ~KrcahSheetness() {
-            }
-
-            bool operator!=(const KrcahSheetness &) const {
-                return false;
-            }
-
-            bool operator==(const KrcahSheetness &other) const {
-                return (*this == other);
-            }
-
             inline TOutputPixel operator()(const TInputPixel &A, const TTracePixel T) {
                 double sheetness = 0.0;
                 double a1 = static_cast<double>( A[0] );
