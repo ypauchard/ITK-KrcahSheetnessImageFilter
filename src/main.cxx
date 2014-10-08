@@ -66,25 +66,33 @@ typedef itk::RescaleIntensityImageFilter<LabelImageType, OutputImageType> Binary
 
 
 // functions
-int process(char *in, char *outputPathSheetness);
-
 FileReaderType::Pointer readImage(char *pathInput);
 
+OutputImageType::Pointer getSheetnessImage(InputImageType::Pointer input);
 OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, float sigma);
 OutputImageType::Pointer extractFemur(OutputImageType::Pointer input);
 
 // expected CLI call:
 // ./Testbench /path/to/input /path/to/output
 int main(int argc, char *argv[]) {
-    int ret = process(argv[1], argv[2]);
-    return ret;
+    // read input
+    FileReaderType::Pointer inputReader = readImage(argv[1]);
+    InputImageType::Pointer inputImage = inputReader->GetOutput();
+
+    // process
+    OutputImageType::Pointer sheetnessImage = getSheetnessImage(inputImage);
+
+    // write output
+    std::cout << "writing sheetness to file..." << std::endl;
+    FileWriterType::Pointer writer = FileWriterType::New();
+    writer->SetFileName(argv[2]);
+    writer->SetInput(sheetnessImage);
+    writer->Update();
+
+    return EXIT_SUCCESS;
 }
 
-int process(char *inputPath, char *outputPathSheetness) {
-    // read input
-    FileReaderType::Pointer inputReader = readImage(inputPath);
-    InputImageType::Pointer input = inputReader->GetOutput();
-
+OutputImageType::Pointer getSheetnessImage(InputImageType::Pointer input) {
     // get the sheetness for both sigma with femur optimized sheetness implementation
     std::cout << "Processing with sigma=0.75..." << std::endl;
     OutputImageType::Pointer resultSigma075Krcah = calculateKrcahSheetness(input, 0.75);
@@ -96,16 +104,9 @@ int process(char *inputPath, char *outputPathSheetness) {
     MaximumAbsoluteValueFilterType::Pointer maximumAbsoluteValueFilter = MaximumAbsoluteValueFilterType::New();
     maximumAbsoluteValueFilter->SetInput1(resultSigma075Krcah);
     maximumAbsoluteValueFilter->SetInput2(resultSigma100Krcah);
+
     maximumAbsoluteValueFilter->Update();
-
-    // write sheetness result
-    std::cout << "writing sheetness to file..." << std::endl;
-    FileWriterType::Pointer writer = FileWriterType::New();
-    writer->SetFileName(outputPathSheetness);
-    writer->SetInput(maximumAbsoluteValueFilter->GetOutput());
-    writer->Update();
-
-    return EXIT_SUCCESS;
+    return maximumAbsoluteValueFilter->GetOutput();
 }
 
 OutputImageType::Pointer calculateKrcahSheetness(InputImageType::Pointer input, float sigma) {
