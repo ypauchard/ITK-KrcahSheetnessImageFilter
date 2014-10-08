@@ -33,14 +33,6 @@ namespace itk {
             this->GetFunctor().SetGamma(value);
         }
 
-        void SetDetectBrightSheets(bool value) {
-            this->GetFunctor().SetDetectBrightSheets(value);
-        }
-
-        void SetDetectDarkSheets(bool value) {
-            this->GetFunctor().SetDetectDarkSheets(value);
-        }
-
     protected:
         KrcahSheetnessImageFilter() {
         };
