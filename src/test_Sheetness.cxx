@@ -3,6 +3,7 @@
 
 #include "itkSymmetricSecondRankTensor.h"
 #include "TraceImageFilter.h"
+#include "MaximumAbsoluteValueImageFilter.h"
 
 TEST(TraceFunctor, double2x2) {
     typedef double InternalPixelType;
@@ -115,3 +116,31 @@ TEST(TraceFunctor, float3x3) {
     ASSERT_FLOAT_EQ(traceValue, 6.6);
 }
 
+TEST(MaximumAbsoluteValueFunctor, BasicTests) {
+    typedef itk::Functor::MaximumAbsoluteValue<float, float, float> FunctorType;
+    FunctorType functor;
+
+    // regular
+    EXPECT_EQ(-5, functor(-5, -2));
+    EXPECT_EQ(5, functor(5, -2));
+
+    // A == B or A == -B
+    EXPECT_EQ(-5, functor(-5, 5)) << "Got wrong return with A = -B.";
+    EXPECT_EQ(5, functor(5, -5)) << "Got wrong return with A = -B.";
+    EXPECT_EQ(5, functor(5, 5));
+
+    // with zero
+    EXPECT_EQ(5, functor(0, 5));
+    EXPECT_EQ(5, functor(5, 0));
+    EXPECT_EQ(0, functor(0, 0));
+    EXPECT_EQ(-1, functor(-1, 0));
+
+    // min / max values
+    float minFloat = std::numeric_limits<float>::min();
+    float maxFloat = std::numeric_limits<float>::max();
+    EXPECT_EQ(minFloat, functor(minFloat, 0));
+    EXPECT_EQ(-minFloat, functor(-minFloat, 0));
+    EXPECT_EQ(maxFloat, functor(maxFloat, -maxFloat));
+    EXPECT_EQ(-maxFloat, functor(-maxFloat, maxFloat));
+    EXPECT_EQ(maxFloat, functor(maxFloat, maxFloat));
+}
