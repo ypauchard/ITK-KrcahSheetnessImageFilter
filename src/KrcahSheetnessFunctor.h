@@ -15,7 +15,6 @@ namespace itk {
                 m_Alpha = 0.5;
                 m_Beta = 0.5;
                 m_Gamma = 0.25;
-                m_DetectBrightSheets = true;
             }
 
             ~KrcahSheetness() {
@@ -54,17 +53,6 @@ namespace itk {
                     std::swap(a2, a3);
                 }
 
-                if (this->m_DetectBrightSheets) {
-                    if (a3 > 0.0) {
-                        return static_cast<TOutputPixel>( sheetness );
-                    }
-                }
-                else {
-                    if (a3 < 0.0) {
-                        return static_cast<TOutputPixel>( sheetness );
-                    }
-                }
-
                 // Avoid divisions by zero (or close to zero)
                 if (static_cast<double>( l3 ) < vnl_math::eps || static_cast<double>( l2 ) < vnl_math::eps) {
                     return static_cast<TOutputPixel>( sheetness );
@@ -95,19 +83,10 @@ namespace itk {
                 this->m_Gamma = value;
             }
 
-            void SetDetectBrightSheets(bool value) {
-                this->m_DetectBrightSheets = value;
-            }
-
-            void SetDetectDarkSheets(bool value) {
-                this->m_DetectBrightSheets = !value;
-            }
-
         private:
             double m_Alpha;
             double m_Beta;
             double m_Gamma;
-            bool m_DetectBrightSheets;
         };
     }
 }
