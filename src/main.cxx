@@ -55,7 +55,7 @@ OutputImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input
 OutputImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, OutputImageType::Pointer sheetness);
 
 // expected CLI call:
-// ./Testbench /path/to/input /path/to/outputSheetness /path/to/outputExclusionNotBone
+// ./KrcahSheetness /path/to/input /path/to/outputSheetness /path/to/outputExclusionNotBone /path/to/outputExclusionNotBackground
 int main(int argc, char *argv[]) {
     // read input
     FileReaderType::Pointer inputReader = readImage(argv[1]);
