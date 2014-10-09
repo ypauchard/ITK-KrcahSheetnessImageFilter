@@ -16,8 +16,9 @@
 #include "itkRelabelComponentImageFilter.h"
 #include "itkCastImageFilter.h"
 #include "itkBinaryFunctorImageFilter.h"
-#include "KrcahNotBackgroundFunctor.h"
+#include "KrcahBackgroundFunctor.h"
 #include "itkMaximumImageFilter.h"
+#include "itkInvertIntensityImageFilter.h"
 
 
 // pixel / image type
@@ -44,8 +45,9 @@ typedef itk::LabelShapeKeepNObjectsImageFilter<LabelImageType> KeepNObjectsFilte
 typedef itk::CastImageFilter<LabelImageType, MaskImageType> LabelToMaskCastFilter;
 
 // not background region
-typedef itk::Functor::KrcahNotBackground<InputPixelType, SheetnessPixelType, SheetnessPixelType> FunctorType;
+typedef itk::Functor::KrcahBackground<InputPixelType, SheetnessPixelType, SheetnessPixelType> FunctorType;
 typedef itk::BinaryFunctorImageFilter<InputImageType, SheetnessImageType, MaskImageType, FunctorType> BinaryFunctorFilterType;
+typedef itk::InvertIntensityImageFilter<MaskImageType, MaskImageType> InvertFilterType;
 
 // combine region
 typedef itk::MaximumImageFilter<MaskImageType> CombineFilterType;
@@ -76,10 +78,10 @@ int main(int argc, char *argv[]) {
     MaskImageType::Pointer exclusionNotBone = getExclusionRegionNotBone(inputImage);
     MaskImageType::Pointer exclusionNotBkg = getExclusionRegionNotBkg(inputImage, sheetnessImage);
     // combine the exclude regions
-    CombineFilterType::Pointer combineFilter = CombineFilterType::New();
-    combineFilter->SetInput1(exclusionNotBone);
-    combineFilter->SetInput2(exclusionNotBkg);
-    combineFilter->Update();
+//    CombineFilterType::Pointer combineFilter = CombineFilterType::New();
+//    combineFilter->SetInput1(exclusionNotBone);
+//    combineFilter->SetInput2(exclusionNotBkg);
+//    combineFilter->Update();
 
     // write output
     std::cout << "writing sheetness to file..." << std::endl;
@@ -88,11 +90,16 @@ int main(int argc, char *argv[]) {
     writer->SetInput(sheetnessImage);
     writer->Update();
 
-    std::cout << "writing exclusion region" << std::endl;
+    std::cout << "writing exclusion regions" << std::endl;
     MaskWriterType::Pointer writerExcludeNotBone = MaskWriterType::New();
     writerExcludeNotBone->SetFileName(argv[3]);
-    writerExcludeNotBone->SetInput(combineFilter->GetOutput());
+    writerExcludeNotBone->SetInput(exclusionNotBone);
     writerExcludeNotBone->Update();
+
+    MaskWriterType::Pointer writerExcludeNotBkg = MaskWriterType::New();
+    writerExcludeNotBkg->SetFileName(argv[4]);
+    writerExcludeNotBkg->SetInput(exclusionNotBkg);
+    writerExcludeNotBkg->Update();
 
     return EXIT_SUCCESS;
 }
@@ -101,8 +108,14 @@ MaskImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, S
     BinaryFunctorFilterType::Pointer notBackgroundRegionFilter = BinaryFunctorFilterType::New();
     notBackgroundRegionFilter->SetInput1(input);
     notBackgroundRegionFilter->SetInput2(sheetness);
-    notBackgroundRegionFilter->Update();
-    return notBackgroundRegionFilter->GetOutput();
+
+    // functor marks background with 1, not background with 0. so we have to invert it
+    InvertFilterType::Pointer invertFilter = InvertFilterType::New();
+    invertFilter->SetInput(notBackgroundRegionFilter->GetOutput());
+    invertFilter->SetMaximum(1);
+
+    invertFilter->Update();
+    return invertFilter->GetOutput();
 }
 
 MaskImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input) {

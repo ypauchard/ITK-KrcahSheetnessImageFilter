@@ -1,12 +1,12 @@
-#ifndef __KrcahNotBackgroundfunctor_h_
-#define __KrcahNotBackgroundfunctor_h_
+#ifndef __KrcahBackgroundfunctor_h_
+#define __KrcahBackgroundfunctor_h_
 
 namespace itk {
     namespace Functor {
         template<class TThresholdPixel, class TSheetnessPixel, class TOutputPixel>
-        class KrcahNotBackground {
+        class KrcahBackground {
         public:
-            KrcahNotBackground() {
+            KrcahBackground() {
                 m_lowerThreshold = 400;
                 m_lowerSheetness = 0;
             }
@@ -22,4 +22,4 @@ namespace itk {
     }
 }
 
-#endif // __KrcahNotBackgroundfunctor_h_
+#endif // __KrcahBackgroundfunctor_h_
