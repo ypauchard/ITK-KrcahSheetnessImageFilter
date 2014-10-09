@@ -4,6 +4,7 @@
 #include "itkSymmetricSecondRankTensor.h"
 #include "TraceImageFilter.h"
 #include "MaximumAbsoluteValueImageFilter.h"
+#include "KrcahNotBackgroundFunctor.h"
 
 TEST(TraceFunctor, double2x2) {
     typedef double InternalPixelType;
@@ -143,4 +144,24 @@ TEST(MaximumAbsoluteValueFunctor, BasicTests) {
     EXPECT_EQ(maxFloat, functor(maxFloat, -maxFloat));
     EXPECT_EQ(-maxFloat, functor(-maxFloat, maxFloat));
     EXPECT_EQ(maxFloat, functor(maxFloat, maxFloat));
+}
+
+TEST(KrcahNotBackgroundFunctor, BasicTests) {
+    typedef itk::Functor::KrcahNotBackground<float, float, float> FunctorType;
+    FunctorType functor;
+
+    float minFloat = std::numeric_limits<float>::min();
+    float maxFloat = std::numeric_limits<float>::max();
+
+    EXPECT_EQ(1, functor(400, 0.1));
+    EXPECT_EQ(0, functor(400, 0));
+    EXPECT_EQ(0, functor(400, -0.1));
+
+    EXPECT_EQ(0, functor(399, 0.1));
+    EXPECT_EQ(0, functor(399, 0));
+    EXPECT_EQ(0, functor(399, -0.1));
+
+    EXPECT_EQ(0, functor(0, 0.1));
+    EXPECT_EQ(0, functor(-400, 0.1));
+    EXPECT_EQ(0, functor(-400, 0));
 }

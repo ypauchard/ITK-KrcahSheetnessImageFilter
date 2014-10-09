@@ -6,6 +6,9 @@
 #include "itkImageFileWriter.h"
 #include "itkCastImageFilter.h"
 
+// sheetness
+#include "KrcahSheetnessFeatureGenerator.h"
+
 // not bone region
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkConnectedComponentImageFilter.h"
@@ -13,7 +16,10 @@
 #include "itkRelabelComponentImageFilter.h"
 #include "itkCastImageFilter.h"
 
-#include "KrcahSheetnessFeatureGenerator.h"
+// not background region
+#include "itkBinaryFunctorImageFilter.h"
+#include "KrcahNotBackgroundFunctor.h"
+
 
 // pixel / image type
 const unsigned int IMAGE_DIMENSION = 3;
@@ -35,13 +41,18 @@ typedef itk::ConnectedComponentImageFilter<LabelImageType, LabelImageType> Conne
 typedef itk::LabelShapeKeepNObjectsImageFilter<LabelImageType> KeepNObjectsFilterType;
 typedef itk::CastImageFilter<LabelImageType, OutputImageType> CastFilterType;
 
+// not background region
+typedef itk::Functor::KrcahNotBackground<InputPixelType, OutputPixelType, OutputPixelType> FunctorType;
+typedef itk::BinaryFunctorImageFilter<InputImageType, OutputImageType, OutputImageType, FunctorType> BinaryFunctorFilterType;
+
 
 // functions
 FileReaderType::Pointer readImage(char *pathInput);
 OutputImageType::Pointer getSheetnessImage(InputImageType::Pointer input);
 
 OutputImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input);
-OutputImageType::Pointer extractFemur(OutputImageType::Pointer input);
+
+OutputImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, OutputImageType::Pointer sheetness);
 
 // expected CLI call:
 // ./Testbench /path/to/input /path/to/outputSheetness /path/to/outputExclusionNotBone
@@ -54,9 +65,13 @@ int main(int argc, char *argv[]) {
     std::cout << "generating sheetness..." << std::endl;
     OutputImageType::Pointer sheetnessImage = getSheetnessImage(inputImage);
 
-    // threshold <50HU
+    // first exclude region 'not bone'
     std::cout << "generating exlusion region 'not bone'..." << std::endl;
     OutputImageType::Pointer exclusionNotBone = getExclusionRegionNotBone(inputImage);
+
+    // second exclude region 'not background'
+    std::cout << "generating exlusion region 'not background'..." << std::endl;
+    OutputImageType::Pointer exclusionNotBkg = getExclusionRegionNotBkg(inputImage, sheetnessImage);
 
     // write output
     std::cout << "writing sheetness to file..." << std::endl;
@@ -71,7 +86,21 @@ int main(int argc, char *argv[]) {
     writerExcludeNotBone->SetInput(exclusionNotBone);
     writerExcludeNotBone->Update();
 
+    std::cout << "writing exclusion not background to file..." << std::endl;
+    FileWriterType::Pointer writerExcludeNotBkg = FileWriterType::New();
+    writerExcludeNotBkg->SetFileName(argv[4]);
+    writerExcludeNotBkg->SetInput(exclusionNotBkg);
+    writerExcludeNotBkg->Update();
+
     return EXIT_SUCCESS;
+}
+
+OutputImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, OutputImageType::Pointer sheetness) {
+    BinaryFunctorFilterType::Pointer notBackgroundRegionFilter = BinaryFunctorFilterType::New();
+    notBackgroundRegionFilter->SetInput1(input);
+    notBackgroundRegionFilter->SetInput2(sheetness);
+    notBackgroundRegionFilter->Update();
+    return notBackgroundRegionFilter->GetOutput();
 }
 
 OutputImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input) {
