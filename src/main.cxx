@@ -9,50 +9,56 @@
 // sheetness
 #include "KrcahSheetnessFeatureGenerator.h"
 
-// not bone region
+// exclude regions
 #include "itkBinaryThresholdImageFilter.h"
 #include "itkConnectedComponentImageFilter.h"
 #include "itkLabelShapeKeepNObjectsImageFilter.h"
 #include "itkRelabelComponentImageFilter.h"
 #include "itkCastImageFilter.h"
-
-// not background region
 #include "itkBinaryFunctorImageFilter.h"
 #include "KrcahNotBackgroundFunctor.h"
+#include "itkMaximumImageFilter.h"
 
 
 // pixel / image type
 const unsigned int IMAGE_DIMENSION = 3;
 typedef short InputPixelType;
-typedef unsigned long LabelPixelType;
-typedef float OutputPixelType;
+typedef float SheetnessPixelType;
+typedef unsigned char MaskPixelType;
 typedef itk::Image<InputPixelType, IMAGE_DIMENSION> InputImageType;
-typedef itk::Image<LabelPixelType, IMAGE_DIMENSION> LabelImageType;
-typedef itk::Image<OutputPixelType, IMAGE_DIMENSION> OutputImageType;
+typedef itk::Image<SheetnessPixelType, IMAGE_DIMENSION> SheetnessImageType;
+typedef itk::Image<MaskPixelType, IMAGE_DIMENSION> MaskImageType;
 typedef itk::ImageFileReader<InputImageType> FileReaderType;
-typedef itk::ImageFileWriter<OutputImageType> FileWriterType;
+typedef itk::ImageFileWriter<SheetnessImageType> FileWriterType;
+typedef itk::ImageFileWriter<MaskImageType> MaskWriterType;
 
 // sheetness
-typedef itk::KrcahSheetnessFeatureGenerator<InputImageType, OutputImageType> KrcahSheetnessFeatureGenerator;
+typedef itk::KrcahSheetnessFeatureGenerator<InputImageType, SheetnessImageType> KrcahSheetnessFeatureGenerator;
 
 // not bone region
+typedef unsigned long LabelPixelType;
+typedef itk::Image<LabelPixelType, IMAGE_DIMENSION> LabelImageType;
 typedef itk::BinaryThresholdImageFilter<InputImageType, LabelImageType> BinaryThresholdFilterType;
 typedef itk::ConnectedComponentImageFilter<LabelImageType, LabelImageType> ConnectedComponentFilterType;
 typedef itk::LabelShapeKeepNObjectsImageFilter<LabelImageType> KeepNObjectsFilterType;
-typedef itk::CastImageFilter<LabelImageType, OutputImageType> CastFilterType;
+typedef itk::CastImageFilter<LabelImageType, MaskImageType> LabelToMaskCastFilter;
 
 // not background region
-typedef itk::Functor::KrcahNotBackground<InputPixelType, OutputPixelType, OutputPixelType> FunctorType;
-typedef itk::BinaryFunctorImageFilter<InputImageType, OutputImageType, OutputImageType, FunctorType> BinaryFunctorFilterType;
+typedef itk::Functor::KrcahNotBackground<InputPixelType, SheetnessPixelType, SheetnessPixelType> FunctorType;
+typedef itk::BinaryFunctorImageFilter<InputImageType, SheetnessImageType, MaskImageType, FunctorType> BinaryFunctorFilterType;
+
+// combine region
+typedef itk::MaximumImageFilter<MaskImageType> CombineFilterType;
 
 
 // functions
 FileReaderType::Pointer readImage(char *pathInput);
-OutputImageType::Pointer getSheetnessImage(InputImageType::Pointer input);
 
-OutputImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input);
+SheetnessImageType::Pointer getSheetnessImage(InputImageType::Pointer input);
 
-OutputImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, OutputImageType::Pointer sheetness);
+MaskImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input);
+
+MaskImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, SheetnessImageType::Pointer sheetness);
 
 // expected CLI call:
 // ./KrcahSheetness /path/to/input /path/to/outputSheetness /path/to/outputExclusionNotBone /path/to/outputExclusionNotBackground
@@ -63,15 +69,17 @@ int main(int argc, char *argv[]) {
 
     // generate sheetness
     std::cout << "generating sheetness..." << std::endl;
-    OutputImageType::Pointer sheetnessImage = getSheetnessImage(inputImage);
+    SheetnessImageType::Pointer sheetnessImage = getSheetnessImage(inputImage);
 
     // first exclude region 'not bone'
-    std::cout << "generating exlusion region 'not bone'..." << std::endl;
-    OutputImageType::Pointer exclusionNotBone = getExclusionRegionNotBone(inputImage);
-
-    // second exclude region 'not background'
-    std::cout << "generating exlusion region 'not background'..." << std::endl;
-    OutputImageType::Pointer exclusionNotBkg = getExclusionRegionNotBkg(inputImage, sheetnessImage);
+    std::cout << "generating exlusion regions" << std::endl;
+    MaskImageType::Pointer exclusionNotBone = getExclusionRegionNotBone(inputImage);
+    MaskImageType::Pointer exclusionNotBkg = getExclusionRegionNotBkg(inputImage, sheetnessImage);
+    // combine the exclude regions
+    CombineFilterType::Pointer combineFilter = CombineFilterType::New();
+    combineFilter->SetInput1(exclusionNotBone);
+    combineFilter->SetInput2(exclusionNotBkg);
+    combineFilter->Update();
 
     // write output
     std::cout << "writing sheetness to file..." << std::endl;
@@ -80,22 +88,16 @@ int main(int argc, char *argv[]) {
     writer->SetInput(sheetnessImage);
     writer->Update();
 
-    std::cout << "writing exclusion not bone to file..." << std::endl;
-    FileWriterType::Pointer writerExcludeNotBone = FileWriterType::New();
+    std::cout << "writing exclusion region" << std::endl;
+    MaskWriterType::Pointer writerExcludeNotBone = MaskWriterType::New();
     writerExcludeNotBone->SetFileName(argv[3]);
-    writerExcludeNotBone->SetInput(exclusionNotBone);
+    writerExcludeNotBone->SetInput(combineFilter->GetOutput());
     writerExcludeNotBone->Update();
-
-    std::cout << "writing exclusion not background to file..." << std::endl;
-    FileWriterType::Pointer writerExcludeNotBkg = FileWriterType::New();
-    writerExcludeNotBkg->SetFileName(argv[4]);
-    writerExcludeNotBkg->SetInput(exclusionNotBkg);
-    writerExcludeNotBkg->Update();
 
     return EXIT_SUCCESS;
 }
 
-OutputImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, OutputImageType::Pointer sheetness) {
+MaskImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, SheetnessImageType::Pointer sheetness) {
     BinaryFunctorFilterType::Pointer notBackgroundRegionFilter = BinaryFunctorFilterType::New();
     notBackgroundRegionFilter->SetInput1(input);
     notBackgroundRegionFilter->SetInput2(sheetness);
@@ -103,7 +105,7 @@ OutputImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input,
     return notBackgroundRegionFilter->GetOutput();
 }
 
-OutputImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input) {
+MaskImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input) {
     // threshold
     BinaryThresholdFilterType::Pointer thresholdFilter = BinaryThresholdFilterType::New();
     thresholdFilter->SetUpperThreshold(-50);
@@ -123,14 +125,14 @@ OutputImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input
     keepNObjectsFilter->SetInput(connectedComponentFilter->GetOutput());
 
     // cast to output. pixel value for region = 1, 'background' = 0
-    CastFilterType::Pointer castFilter = CastFilterType::New();
+    LabelToMaskCastFilter::Pointer castFilter = LabelToMaskCastFilter::New();
     castFilter->SetInput(keepNObjectsFilter->GetOutput());
 
     castFilter->Update();
     return castFilter->GetOutput();
 }
 
-OutputImageType::Pointer getSheetnessImage(InputImageType::Pointer input) {
+SheetnessImageType::Pointer getSheetnessImage(InputImageType::Pointer input) {
     KrcahSheetnessFeatureGenerator::Pointer generator = KrcahSheetnessFeatureGenerator::New();
     generator->SetInput(input);
     generator->Update();

@@ -12,7 +12,7 @@ namespace itk {
             }
 
             inline TOutputPixel operator()(const TThresholdPixel &T, const TSheetnessPixel S) {
-                return static_cast<TOutputPixel>( T >= m_lowerThreshold && S > 0 ? 1 : 0 );
+                return static_cast<TOutputPixel>( T >= m_lowerThreshold && S > 0 ? 0 : 1 );
             }
 
         private:
