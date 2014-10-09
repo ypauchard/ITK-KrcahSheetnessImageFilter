@@ -22,40 +22,18 @@
 #include "MaximumAbsoluteValueImageFilter.h"
 #include "KrcahSheetnessImageFilter.h"
 #include "TraceImageFilter.h"
+#include "KrcahSheetnessFeatureGenerator.h"
 
 // pixel / image type
 const unsigned int IMAGE_DIMENSION = 3;
 typedef short InputPixelType;
-typedef float InternalPixelType;
 typedef float OutputPixelType;
 typedef itk::Image<InputPixelType, IMAGE_DIMENSION> InputImageType;
-typedef itk::Image<InternalPixelType, IMAGE_DIMENSION> InternalImageType;
 typedef itk::Image<OutputPixelType, IMAGE_DIMENSION> OutputImageType;
 typedef itk::ImageFileReader<InputImageType> FileReaderType;
 typedef itk::ImageFileWriter<OutputImageType> FileWriterType;
-typedef itk::CastImageFilter<InputImageType, InternalImageType> InputCastFilterType;
 
-// input processing
-typedef itk::DiscreteGaussianImageFilter<InternalImageType, InternalImageType> GaussianFilterType;
-typedef itk::SubtractImageFilter<InternalImageType, InternalImageType, InternalImageType> SubstractFilterType;
-typedef itk::MultiplyImageFilter<InternalImageType, InternalImageType, InternalImageType> MultiplyFilterType;
-typedef itk::AddImageFilter<InternalImageType, InternalImageType, InternalImageType> AddFilterType;
-
-// sheetness prerequisites
-typedef itk::HessianRecursiveGaussianImageFilter<InternalImageType> HessianFilterType;
-typedef HessianFilterType::OutputImageType HessianImageType;
-typedef HessianImageType::PixelType HessianPixelType;
-typedef itk::FixedArray<double, HessianPixelType::Dimension> EigenValueArrayType;
-typedef itk::Image<EigenValueArrayType, IMAGE_DIMENSION> EigenValueImageType;
-typedef itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType> EigenAnalysisFilterType;
-typedef itk::TraceImageFilter<HessianImageType, InternalImageType> TraceFilterType;
-typedef itk::StatisticsImageFilter<InternalImageType> StatisticsFilterType;
-
-// sheetness
-typedef itk::KrcahSheetnessImageFilter<EigenValueImageType, double, OutputImageType> SheetnessFilterType;
-
-// post processing
-typedef itk::MaximumAbsoluteValueImageFilter<OutputImageType, OutputImageType, OutputImageType> MaximumAbsoluteValueFilterType;
+typedef itk::KrcahSheetnessFeatureGenerator<InputImageType, OutputImageType> KrcahSheetnessFeatureGenerator;
 
 // femur connected components
 typedef itk::Image<unsigned long, IMAGE_DIMENSION> LabelImageType;
@@ -68,8 +46,6 @@ typedef itk::RescaleIntensityImageFilter<LabelImageType, OutputImageType> Binary
 // functions
 FileReaderType::Pointer readImage(char *pathInput);
 OutputImageType::Pointer getSheetnessImage(InputImageType::Pointer input);
-
-OutputImageType::Pointer calculateKrcahSheetness(InternalImageType::Pointer input, float sigma);
 OutputImageType::Pointer extractFemur(OutputImageType::Pointer input);
 
 // expected CLI call:
@@ -79,7 +55,8 @@ int main(int argc, char *argv[]) {
     FileReaderType::Pointer inputReader = readImage(argv[1]);
     InputImageType::Pointer inputImage = inputReader->GetOutput();
 
-    // process sheetness
+    // generate sheetness
+    std::cout << "generating sheetness..." << std::endl;
     OutputImageType::Pointer sheetnessImage = getSheetnessImage(inputImage);
 
     // write output
@@ -93,144 +70,10 @@ int main(int argc, char *argv[]) {
 }
 
 OutputImageType::Pointer getSheetnessImage(InputImageType::Pointer input) {
-    InputCastFilterType::Pointer castFilter = InputCastFilterType::New();
-    castFilter->SetInput(input);
-    castFilter->Update();
-
-    // get the sheetness for both sigma with femur optimized sheetness implementation
-    std::cout << "Processing with sigma=0.75..." << std::endl;
-    OutputImageType::Pointer resultSigma075Krcah = calculateKrcahSheetness(castFilter->GetOutput(), 0.75);
-    std::cout << "Processing with sigma=1.0..." << std::endl;
-    OutputImageType::Pointer resultSigma100Krcah = calculateKrcahSheetness(castFilter->GetOutput(), 1.0);
-
-    // combine the results
-    std::cout << "combining results..." << std::endl;
-    MaximumAbsoluteValueFilterType::Pointer maximumAbsoluteValueFilter = MaximumAbsoluteValueFilterType::New();
-    maximumAbsoluteValueFilter->SetInput1(resultSigma075Krcah);
-    maximumAbsoluteValueFilter->SetInput2(resultSigma100Krcah);
-
-    maximumAbsoluteValueFilter->Update();
-    return maximumAbsoluteValueFilter->GetOutput();
-}
-
-OutputImageType::Pointer calculateKrcahSheetness(InternalImageType::Pointer input, float sigma) {
-
-    /******
-    * Input preprocessing
-    ******/
-    std::cout << "CPU time (in s):" << std::endl;
-    std::clock_t begin = std::clock();
-    std::clock_t beginTotal = std::clock();
-
-    // I*G (discrete gauss)
-    GaussianFilterType::Pointer m_DiffusionFilter = GaussianFilterType::New();
-    m_DiffusionFilter->SetVariance(1);
-    m_DiffusionFilter->SetInput(input);
-    m_DiffusionFilter->Update();
-
-    std::clock_t end = std::clock();
-    double elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "diffusion: " << elapsedSecs << std::endl;
-    begin = std::clock();
-
-    // I - (I*G)
-    SubstractFilterType::Pointer m_SubstractFilter = SubstractFilterType::New();
-    m_SubstractFilter->SetInput1(input);
-    m_SubstractFilter->SetInput2(m_DiffusionFilter->GetOutput()); // =s
-    m_SubstractFilter->Update();
-
-    end = std::clock();
-    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "substract: " << elapsedSecs << std::endl;
-    begin = std::clock();
-
-    // k(I-(I*G))
-    MultiplyFilterType::Pointer m_MultiplyFilter = MultiplyFilterType::New();
-    m_MultiplyFilter->SetInput(m_SubstractFilter->GetOutput());
-    m_MultiplyFilter->SetConstant(10); // =k
-    m_MultiplyFilter->Update();
-
-    end = std::clock();
-    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "multiply: " << elapsedSecs << std::endl;
-    begin = std::clock();
-
-    // I+k*(I-(I*G))
-    AddFilterType::Pointer m_AddFilter = AddFilterType::New();
-    m_AddFilter->SetInput1(input);
-    m_AddFilter->SetInput2(m_MultiplyFilter->GetOutput());
-    m_AddFilter->Update();
-
-    end = std::clock();
-    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "add: " << elapsedSecs << std::endl;
-    begin = std::clock();
-
-    /******
-    * sheetness prerequisites
-    ******/
-    // hessian
-    HessianFilterType::Pointer m_HessianFilter = HessianFilterType::New();
-    m_HessianFilter->SetSigma(sigma);
-    m_HessianFilter->SetInput(m_AddFilter->GetOutput());
-    m_HessianFilter->Update();
-
-    end = std::clock();
-    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "Hessian: " << elapsedSecs << std::endl;
-    begin = std::clock();
-
-    // eigen analysis
-    EigenAnalysisFilterType::Pointer m_EigenAnalysisFilter = EigenAnalysisFilterType::New();
-    m_EigenAnalysisFilter->SetDimension(IMAGE_DIMENSION);
-    m_EigenAnalysisFilter->SetInput(m_HessianFilter->GetOutput());
-    m_EigenAnalysisFilter->Update();
-
-    end = std::clock();
-    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "Eigen analysis: " << elapsedSecs << std::endl;
-    begin = std::clock();
-
-    // calculate trace
-    TraceFilterType::Pointer m_TraceFilter = TraceFilterType::New();
-    m_TraceFilter->SetImageDimension(IMAGE_DIMENSION);
-    m_TraceFilter->SetInput(m_HessianFilter->GetOutput());
-    m_TraceFilter->Update();
-
-    end = std::clock();
-    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "Trace: " << elapsedSecs << std::endl;
-    begin = std::clock();
-
-    // calculate average
-    StatisticsFilterType::Pointer m_StatisticsFilter = StatisticsFilterType::New();
-    m_StatisticsFilter->SetInput(m_TraceFilter->GetOutput());
-    m_StatisticsFilter->Update();
-
-    end = std::clock();
-    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "statistics: " << elapsedSecs << std::endl;
-    begin = std::clock();
-
-    /******
-    * Sheetness
-    ******/
-    SheetnessFilterType::Pointer m_SheetnessFilter = SheetnessFilterType::New();
-    m_SheetnessFilter->SetInput(m_EigenAnalysisFilter->GetOutput());
-    m_SheetnessFilter->SetConstant(m_StatisticsFilter->GetMean());
-    m_SheetnessFilter->Update();
-
-    end = std::clock();
-    elapsedSecs = double(end - begin) / CLOCKS_PER_SEC;
-    std::cout << "Sheetness: " << elapsedSecs << std::endl;
-
-    std::clock_t endTotal = std::clock();
-    double elapsedSecsTotal = double(endTotal - beginTotal) / CLOCKS_PER_SEC;
-    std::cout << "------------" << std::endl;
-    std::cout << "Total: " << elapsedSecsTotal << std::endl;
-    std::cout << std::endl;
-
-    return m_SheetnessFilter->GetOutput();
+    KrcahSheetnessFeatureGenerator::Pointer generator = KrcahSheetnessFeatureGenerator::New();
+    generator->SetInput(input);
+    generator->Update();
+    return generator->GetOutput();
 }
 
 OutputImageType::Pointer extractFemur(OutputImageType::Pointer input) {
