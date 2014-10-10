@@ -35,6 +35,26 @@ namespace itk {
         typedef Image<InternalPixelType, NDimension> InternalImageType;
         typedef TOutput OutputImageType;
 
+        void SetGaussVariance(double d) {
+            m_GaussVariance = d;
+        }
+
+        void SetScalingConstant(double d) {
+            m_ScalingConstant = d;
+        }
+
+        void SetAlpha(double d) {
+            m_Alpha = d;
+        }
+
+        void SetBeta(double d) {
+            m_Beta = d;
+        }
+
+        void SetGamme(double d) {
+            m_Gamma = d;
+        }
+
     protected:
         KrcahSheetnessFeatureGenerator();
 
@@ -46,6 +66,13 @@ namespace itk {
         KrcahSheetnessFeatureGenerator(const Self &);
 
         void operator=(const Self &);
+
+        // parameters
+        double m_GaussVariance;
+        double m_ScalingConstant;
+        double m_Alpha;
+        double m_Beta;
+        double m_Gamma;
 
         typename OutputImageType::Pointer generateSheetnessWithSigma(typename InputImageType::ConstPointer img, float sigma);
 

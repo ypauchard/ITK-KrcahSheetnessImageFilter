@@ -6,7 +6,11 @@
 namespace itk {
     template<typename TInput, typename TOutput>
     KrcahSheetnessFeatureGenerator<TInput, TOutput>
-    ::KrcahSheetnessFeatureGenerator() {
+    ::KrcahSheetnessFeatureGenerator()
+    // suggested values by Krcah el. al.
+            : m_GaussVariance(1) // =s
+            , m_ScalingConstant(10) // =k
+            , m_Alpha(0.5), m_Beta(0.5), m_Gamma(0.25) {
         this->SetNumberOfRequiredInputs(1);
     }
 
@@ -46,18 +50,18 @@ namespace itk {
 
         // I*G (discrete gauss)
         typename GaussianFilterType::Pointer m_DiffusionFilter = GaussianFilterType::New();
-        m_DiffusionFilter->SetVariance(1);
+        m_DiffusionFilter->SetVariance(m_GaussVariance); // =s
         m_DiffusionFilter->SetInput(castFilter->GetOutput());
 
         // I - (I*G)
         typename SubstractFilterType::Pointer m_SubstractFilter = SubstractFilterType::New();
         m_SubstractFilter->SetInput1(castFilter->GetOutput());
-        m_SubstractFilter->SetInput2(m_DiffusionFilter->GetOutput()); // =s
+        m_SubstractFilter->SetInput2(m_DiffusionFilter->GetOutput());
 
         // k(I-(I*G))
         typename MultiplyFilterType::Pointer m_MultiplyFilter = MultiplyFilterType::New();
         m_MultiplyFilter->SetInput(m_SubstractFilter->GetOutput());
-        m_MultiplyFilter->SetConstant(10); // =k
+        m_MultiplyFilter->SetConstant(m_ScalingConstant); // =k
 
         // I+k*(I-(I*G))
         typename AddFilterType::Pointer m_AddFilter = AddFilterType::New();
@@ -93,6 +97,9 @@ namespace itk {
         typename SheetnessFilterType::Pointer m_SheetnessFilter = SheetnessFilterType::New();
         m_SheetnessFilter->SetInput(m_EigenAnalysisFilter->GetOutput());
         m_SheetnessFilter->SetConstant(m_StatisticsFilter->GetMean());
+        m_SheetnessFilter->SetAlpha(m_Alpha);
+        m_SheetnessFilter->SetBeta(m_Beta);
+        m_SheetnessFilter->SetGamma(m_Gamma);
 
         // return
         m_SheetnessFilter->Update();
