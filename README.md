@@ -2,9 +2,9 @@
 Implementation of a sheetness image filter as described by Krcah et. al.
 
 ## Usage
-`./KrcahSheetness  /path/to/input /path/to/outputSheetness /path/to/outputExclusionNotBone /path/to/outputExclusionNotBackground`
+`./KrcahSheetness  /path/to/input /path/to/outputSheetness /path/to/background /path/to/foreground`
 
-Example: `./KrcahSheetness ../data_sensitive/IHA_1630_R.mhd ../data/sheetness.mhd ../data/exclusionNotBone.mhd ../data/exclusionNotBackground.mhd`
+Example: `./KrcahSheetness ../data_sensitive/IHA_1630_R.mhd ../data/sheetness.mhd ../data/background.mhd ../data/foreground.mhd`
 
 ## Build Instruction
 ```

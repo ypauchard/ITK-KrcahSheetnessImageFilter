@@ -7,17 +7,16 @@ namespace itk {
         class KrcahBackground {
         public:
             KrcahBackground() {
-                m_lowerThreshold = 400;
-                m_lowerSheetness = 0;
             }
 
-            inline TOutputPixel operator()(const TThresholdPixel &T, const TSheetnessPixel S) {
-                return static_cast<TOutputPixel>( T >= m_lowerThreshold && S > 0 ? 0 : 1 );
-            }
+            inline TOutputPixel operator()(const TThresholdPixel T, const TSheetnessPixel S) {
 
-        private:
-            unsigned int m_lowerThreshold;
-            unsigned int m_lowerSheetness;
+                // 1 = pixel is NOT background, 0 = pixel is background
+                if (T >= 400 && S > 0) {
+                    return static_cast<TOutputPixel>(1);
+                }
+                return static_cast<TOutputPixel>(0);
+            }
         };
     }
 }

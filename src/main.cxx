@@ -1,6 +1,3 @@
-#include <ctime>
-
-
 // ITK
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
@@ -17,8 +14,6 @@
 #include "itkCastImageFilter.h"
 #include "itkBinaryFunctorImageFilter.h"
 #include "KrcahBackgroundFunctor.h"
-#include "itkMaximumImageFilter.h"
-#include "itkInvertIntensityImageFilter.h"
 
 
 // pixel / image type
@@ -47,11 +42,6 @@ typedef itk::CastImageFilter<LabelImageType, MaskImageType> LabelToMaskCastFilte
 // not background region
 typedef itk::Functor::KrcahBackground<InputPixelType, SheetnessPixelType, SheetnessPixelType> FunctorType;
 typedef itk::BinaryFunctorImageFilter<InputImageType, SheetnessImageType, MaskImageType, FunctorType> BinaryFunctorFilterType;
-typedef itk::InvertIntensityImageFilter<MaskImageType, MaskImageType> InvertFilterType;
-
-// combine region
-typedef itk::MaximumImageFilter<MaskImageType> CombineFilterType;
-
 
 // functions
 FileReaderType::Pointer readImage(char *pathInput);
@@ -65,6 +55,19 @@ MaskImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, S
 // expected CLI call:
 // ./KrcahSheetness /path/to/input /path/to/outputSheetness /path/to/outputExclusionNotBone /path/to/outputExclusionNotBackground
 int main(int argc, char *argv[]) {
+    // Verify arguments
+    if (argc != 5) {
+        std::cerr << "Required: inputImage.mhd outputSheetness.mhd outputBackground.mhd outputForeground.mhd" << std::endl;
+        std::cerr << "inputImage.mhd:        3D image in Hounsfield Units -1024 to 3071" << std::endl;
+        std::cerr << "outputSheetness.mhd:   3D image sheetness results." << std::endl;
+        std::cerr << "                       Pixeltype float, ranging from -1 to 1." << std::endl;
+        std::cerr << "outputBackground.mhd:  3D image background mask." << std::endl;
+        std::cerr << "                       Pixeltype unsigned char, pixel value 1 indicating background." << std::endl;
+        std::cerr << "outputForeground.mhd:  3D image foreground mask" << std::endl;
+        std::cerr << "                       Pixeltype unsigned char, pixel value 1 indicating foreground." << std::endl;
+        return EXIT_FAILURE;
+    }
+
     // read input
     FileReaderType::Pointer inputReader = readImage(argv[1]);
     InputImageType::Pointer inputImage = inputReader->GetOutput();
@@ -76,12 +79,12 @@ int main(int argc, char *argv[]) {
     // first exclude region 'not bone'
     std::cout << "generating exlusion regions" << std::endl;
     MaskImageType::Pointer exclusionNotBone = getExclusionRegionNotBone(inputImage);
-    MaskImageType::Pointer exclusionNotBkg = getExclusionRegionNotBkg(inputImage, sheetnessImage);
-    // combine the exclude regions
-//    CombineFilterType::Pointer combineFilter = CombineFilterType::New();
-//    combineFilter->SetInput1(exclusionNotBone);
-//    combineFilter->SetInput2(exclusionNotBkg);
-//    combineFilter->Update();
+
+    FileReaderType::Pointer inputReader2 = readImage(argv[1]);
+    InputImageType::Pointer inputImage2 = inputReader2->GetOutput();
+
+//    itk::MultiThreader::SetGlobalDefaultNumberOfThreads(1);
+    MaskImageType::Pointer exclusionNotBkg = getExclusionRegionNotBkg(inputImage2, sheetnessImage);
 
     // write output
     std::cout << "writing sheetness to file..." << std::endl;
@@ -109,13 +112,8 @@ MaskImageType::Pointer getExclusionRegionNotBkg(InputImageType::Pointer input, S
     notBackgroundRegionFilter->SetInput1(input);
     notBackgroundRegionFilter->SetInput2(sheetness);
 
-    // functor marks background with 1, not background with 0. so we have to invert it
-    InvertFilterType::Pointer invertFilter = InvertFilterType::New();
-    invertFilter->SetInput(notBackgroundRegionFilter->GetOutput());
-    invertFilter->SetMaximum(1);
-
-    invertFilter->Update();
-    return invertFilter->GetOutput();
+    notBackgroundRegionFilter->Update();
+    return notBackgroundRegionFilter->GetOutput();
 }
 
 MaskImageType::Pointer getExclusionRegionNotBone(InputImageType::Pointer input) {
