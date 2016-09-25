@@ -13,9 +13,6 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Testbench_SOURCE_DIR}/bin)
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
 
-find_package(VTK REQUIRED)
-include(${VTK_USE_FILE})
-
 subdirs(src)
 
 ################################
