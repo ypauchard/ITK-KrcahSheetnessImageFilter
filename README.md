@@ -4,7 +4,7 @@ Implementation of a sheetness image filter as described by Krcah et. al.
 ## Usage
 `./KrcahSheetness  /path/to/input /path/to/outputSheetness /path/to/background /path/to/foreground`
 
-Example: `./KrcahSheetness ../data_sensitive/IHA_1630_R.mhd ../data/sheetness.mhd ../data/background.mhd ../data/foreground.mhd`
+Example: `./KrcahSheetness ../data_sensitive/ct_image.mhd ../data/sheetness.mhd ../data/background.mhd ../data/foreground.mhd`
 
 ## Build Instruction
 ```
