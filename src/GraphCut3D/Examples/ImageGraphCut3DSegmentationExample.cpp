@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
             << "lambda: " << lambda << std::endl;
 
     // Define all image types
-    typedef itk::Image<short, 3> ImageType;
+    typedef itk::Image<float, 3> ImageType;
     typedef itk::Image<unsigned char, 3> ForegroundMaskType;
     typedef itk::Image<unsigned char, 3> BackgroundMaskType;
     typedef itk::Image<unsigned char, 3> OutputImageType;
