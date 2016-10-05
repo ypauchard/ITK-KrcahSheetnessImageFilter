@@ -21,14 +21,14 @@
 int main(int argc, char *argv[]) {
     // Verify arguments
     if (argc != 8) {
-        std::cerr << "Required: image.mhd foregroundMask.mhd backgroundMask.mhd output.mhd sigma boundaryDirection" << std::endl;
-        std::cerr << "image.mhd:           3D image in Hounsfield Units -1024 to 3071" << std::endl;
+        std::cerr << "Required: image.mhd foregroundMask.mhd backgroundMask.mhd output.mhd sigma boundaryDirection lambda" << std::endl;
+        std::cerr << "image.mhd:           3D image sheetness measure -1.0 to 1.0" << std::endl;
         std::cerr << "foregroundMask.mhd:  3D image non-zero pixels indicating foreground and 0 elsewhere" << std::endl;
         std::cerr << "backgroundMask.mhd:  3D image non-zero pixels indicating background and 0 elsewhere" << std::endl;
         std::cerr << "output.mhd:          3D image resulting segmentation" << std::endl;
         std::cerr << "                     Foreground as 127 and Background as 255" << std::endl;
-        std::cerr << "sigma                estimated noise in boundary term, try 50.0" << std::endl;
-        std::cerr << "boundaryDirection    0->bidirectional; 1->bright to dark; 2->dark to bright" << std::endl;
+        std::cerr << "sigma                estimated noise in boundary term, try 0.2" << std::endl;
+        std::cerr << "boundaryDirection    0->bidirectional; 1->bright to dark; 2->dark to bright, try 1" << std::endl;
         std::cerr << "lambda               boundary term weight, try 5.0" << std::endl;
         return EXIT_FAILURE;
     }
