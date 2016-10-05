@@ -138,7 +138,7 @@ namespace itk {
                 }
 
                 // Compute the edge weight
-                double weight = exp(-pow(centerPixel - neighborPixel, 2) / (2.0 * m_Sigma * m_Sigma));
+                double weight = exp(-abs(centerPixel - neighborPixel) /  m_Sigma);
                 assert(weight >= 0);
 
                 // Add the edge to the graph
