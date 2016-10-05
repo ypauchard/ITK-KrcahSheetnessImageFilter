@@ -164,14 +164,14 @@ namespace itk {
             progress.CompletedPixel();
         }
 
-        // set the terminal connection capacity to max float
+        // set the terminal connection capacity of region term voxels to 1.0
         for (unsigned int i = 0; i < sources.size(); i++) {
             unsigned int sourceIndex = ConvertIndexToVertexDescriptor(sources[i], images.inputRegion);
-            graph->addTerminalEdges(sourceIndex, std::numeric_limits<float>::max(), 0);
+            graph->addTerminalEdges(sourceIndex, 1.0, 0);
         }
         for (unsigned int i = 0; i < sinks.size(); i++) {
             unsigned int sinkIndex = ConvertIndexToVertexDescriptor(sinks[i], images.inputRegion);
-            graph->addTerminalEdges(sinkIndex, 0, std::numeric_limits<float>::max());
+            graph->addTerminalEdges(sinkIndex, 0, 1.0);
         }
     }
 
