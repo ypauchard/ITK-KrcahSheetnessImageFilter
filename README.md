@@ -3,6 +3,7 @@ Implementation of graphcut segmentation based on a sheetness image filter as des
 
 ## Usage
 **Create the sheetness image, and foreground and background masks**
+
 `./KrcahSheetness  /path/to/input /path/to/outputSheetness /path/to/background /path/to/foreground`
 
 Example: 
@@ -12,6 +13,7 @@ cd src/GraphCut3D/data/test/left_femur
 ```
 
 **Perform Graphcut**
+
 `./ImageGraphCut3DSegmentationExample /path/to/outputSheetness /path/to/foreground /path/to/background /path/to/outputGraphcut sigma direction lambda `
 
 Example: 
@@ -21,6 +23,7 @@ cd src/GraphCut3D/data/test/left_femur
 ```
 
 **Post-processing**
+
 Not implemented.
 
 ## Build Instruction
