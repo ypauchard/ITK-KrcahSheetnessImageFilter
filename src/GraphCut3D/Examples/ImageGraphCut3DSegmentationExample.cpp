@@ -20,7 +20,7 @@
 */
 int main(int argc, char *argv[]) {
     // Verify arguments
-    if (argc != 7) {
+    if (argc != 8) {
         std::cerr << "Required: image.mhd foregroundMask.mhd backgroundMask.mhd output.mhd sigma boundaryDirection" << std::endl;
         std::cerr << "image.mhd:           3D image in Hounsfield Units -1024 to 3071" << std::endl;
         std::cerr << "foregroundMask.mhd:  3D image non-zero pixels indicating foreground and 0 elsewhere" << std::endl;
@@ -29,6 +29,7 @@ int main(int argc, char *argv[]) {
         std::cerr << "                     Foreground as 127 and Background as 255" << std::endl;
         std::cerr << "sigma                estimated noise in boundary term, try 50.0" << std::endl;
         std::cerr << "boundaryDirection    0->bidirectional; 1->bright to dark; 2->dark to bright" << std::endl;
+        std::cerr << "lambda               boundary term weight, try 5.0" << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -39,6 +40,7 @@ int main(int argc, char *argv[]) {
     std::string outputFilename = argv[4];
     double sigma = atof(argv[5]);               // Noise parameter
     int boundaryDirection = atoi(argv[6]);      // 0->bidirectional; 1->bright to dark; 2->dark to bright
+    double lambda = atof(argv[7]);               // Boundary term weight
 
     // Print arguments
     std::cout << "imageFilename: " << imageFilename << std::endl
@@ -46,7 +48,8 @@ int main(int argc, char *argv[]) {
             << "backgroundFilename: " << backgroundFilename << std::endl
             << "outputFilename: " << outputFilename << std::endl
             << "sigma: " << sigma << std::endl
-            << "boundaryDirection: " << boundaryDirection << std::endl;
+            << "boundaryDirection: " << boundaryDirection << std::endl
+            << "lambda: " << lambda << std::endl;
 
     // Define all image types
     typedef itk::Image<short, 3> ImageType;
@@ -91,6 +94,7 @@ int main(int argc, char *argv[]) {
         default:
             graphCutFilter->SetBoundaryDirectionTypeToNoDirection();
     }
+    graphCutFilter->SetLambda(lambda);
 
     // Define the color values of the output
     graphCutFilter->SetForegroundPixelValue(255);

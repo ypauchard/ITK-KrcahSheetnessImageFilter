@@ -59,6 +59,10 @@ namespace itk {
             m_Sigma = d;
         }
 
+        void SetLambda(double d) {
+            m_Lambda = d;
+        }
+
         void SetBoundaryDirectionTypeToNoDirection() {
             m_BoundaryDirectionType = NoDirection;
         }
@@ -148,6 +152,7 @@ namespace itk {
         typename OutputImageType::PixelType m_ForegroundPixelValue;
         typename OutputImageType::PixelType m_BackgroundPixelValue;
         bool m_PrintTimer;
+        double m_Lambda; // Boundary term weight
 
 
     private:

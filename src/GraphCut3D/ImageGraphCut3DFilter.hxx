@@ -20,7 +20,8 @@ namespace itk {
               m_BoundaryDirectionType(BrightDark),
               m_ForegroundPixelValue(255),
               m_BackgroundPixelValue(0),
-              m_PrintTimer(false) {
+              m_PrintTimer(false),
+              m_Lambda(5.0){
         this->SetNumberOfRequiredInputs(3);
     }
 
@@ -138,7 +139,7 @@ namespace itk {
                 }
 
                 // Compute the edge weight
-                double weight = exp(-abs(centerPixel - neighborPixel) /  m_Sigma);
+                double weight = m_Lambda * exp(-abs(centerPixel - neighborPixel) /  m_Sigma);
                 assert(weight >= 0);
 
                 // Add the edge to the graph
