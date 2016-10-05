@@ -141,6 +141,7 @@ namespace itk {
                 // Compute the edge weight
                 double weight = m_Lambda * exp(-std::abs(centerPixel - neighborPixel) /  m_Sigma);
                 assert(weight >= 0);
+                double otherWeight = m_Lambda * 1.0; //Needed for directional boundary term
 
                 // Add the edge to the graph
                 unsigned int nodeIndex1 = ConvertIndexToVertexDescriptor(iterator.GetIndex(center), images.inputRegion);
@@ -149,14 +150,14 @@ namespace itk {
                 //Determine which direction is used
                 if (m_BoundaryDirectionType == BrightDark) {
                     if (centerPixel > neighborPixel)
-                        graph->addBidirectionalEdge(nodeIndex1, nodeIndex2, weight, 1.0);
+                        graph->addBidirectionalEdge(nodeIndex1, nodeIndex2, weight, otherWeight);
                     else
-                        graph->addBidirectionalEdge(nodeIndex1, nodeIndex2, 1.0, weight);
+                        graph->addBidirectionalEdge(nodeIndex1, nodeIndex2, otherWeight, weight);
                 } else if (m_BoundaryDirectionType == DarkBright) {
                     if (centerPixel > neighborPixel)
-                        graph->addBidirectionalEdge(nodeIndex1, nodeIndex2, 1.0, weight);
+                        graph->addBidirectionalEdge(nodeIndex1, nodeIndex2, otherWeight, weight);
                     else
-                        graph->addBidirectionalEdge(nodeIndex1, nodeIndex2, weight, 1.0);
+                        graph->addBidirectionalEdge(nodeIndex1, nodeIndex2, weight, otherWeight);
                 } else {
                     graph->addBidirectionalEdge(nodeIndex1, nodeIndex2, weight, weight);
                 }
