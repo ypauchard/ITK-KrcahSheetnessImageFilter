@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     graphCutFilter->SetLambda(lambda);
 
     // Define the color values of the output
-    graphCutFilter->SetForegroundPixelValue(255);
+    graphCutFilter->SetForegroundPixelValue(1);
     graphCutFilter->SetBackgroundPixelValue(0);
 
     // Start the computation
