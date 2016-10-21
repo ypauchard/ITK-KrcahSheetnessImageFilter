@@ -140,9 +140,15 @@ namespace itk {
                 }
 
                 // Compute the edge weight
-                double weight = m_Lambda * exp(-std::abs(centerPixel - neighborPixel) /  m_Sigma);
-                assert(weight >= 0);
-                double otherWeight = m_Lambda * 1.0; //Needed for directional boundary term
+                double weight = 1.0;
+                double otherWeight = 1.0;
+                // Only if lambda is positive, we compute exp()
+                if( m_Lambda >= 0) {
+                    weight = m_Lambda * exp(-std::abs(centerPixel - neighborPixel) / m_Sigma);
+                    assert(weight >= 0);
+                    otherWeight = m_Lambda * 1.0; //Needed for directional boundary term
+                    assert(otherWeight >= 0);
+                }
 
                 // Add the edge to the graph
                 unsigned int nodeIndex1 = ConvertIndexToVertexDescriptor(iterator.GetIndex(center), images.inputRegion);
