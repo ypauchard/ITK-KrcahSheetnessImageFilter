@@ -21,7 +21,8 @@ namespace itk {
               m_ForegroundPixelValue(255),
               m_BackgroundPixelValue(0),
               m_PrintTimer(false),
-              m_Lambda(5.0){
+              m_Lambda(5.0),
+              m_TerminalWeight(1.0){
         this->SetNumberOfRequiredInputs(3);
     }
 
@@ -168,11 +169,11 @@ namespace itk {
         // set the terminal connection capacity of region term voxels to 1.0
         for (unsigned int i = 0; i < sources.size(); i++) {
             unsigned int sourceIndex = ConvertIndexToVertexDescriptor(sources[i], images.inputRegion);
-            graph->addTerminalEdges(sourceIndex, 1.0, 0);
+            graph->addTerminalEdges(sourceIndex, m_TerminalWeight, 0);
         }
         for (unsigned int i = 0; i < sinks.size(); i++) {
             unsigned int sinkIndex = ConvertIndexToVertexDescriptor(sinks[i], images.inputRegion);
-            graph->addTerminalEdges(sinkIndex, 0, 1.0);
+            graph->addTerminalEdges(sinkIndex, 0, m_TerminalWeight);
         }
     }
 

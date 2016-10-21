@@ -63,6 +63,10 @@ namespace itk {
             m_Lambda = d;
         }
 
+        void SetTerminalWeight(float f) {
+            m_TerminalWeight = f;
+        }
+
         void SetBoundaryDirectionTypeToNoDirection() {
             m_BoundaryDirectionType = NoDirection;
         }
@@ -153,6 +157,7 @@ namespace itk {
         typename OutputImageType::PixelType m_BackgroundPixelValue;
         bool m_PrintTimer;
         double m_Lambda; // Boundary term weight
+        float m_TerminalWeight; //source/sink terminal value
 
 
     private:
