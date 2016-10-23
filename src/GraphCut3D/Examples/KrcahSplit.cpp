@@ -7,15 +7,13 @@
  *  Some rights reserved.
  */
 
- #include "ImageGraphCut3DFilter.h"
+#include "ImageGraphCut3DFilter.h"
+#include "LabelImage.h"
 
 
 #include "itkImage.h"
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-#include "itkConnectedComponentImageFilter.h"
-#include "itkRelabelComponentImageFilter.h"
-#include "itkBinaryThresholdImageFilter.h"
 #include "itkBinaryErodeImageFilter.h"
 #include "itkBinaryBallStructuringElement.h"
 
@@ -47,12 +45,6 @@ int main(int argc, char *argv[]) {
             << "outputFilename: " << outputFilename << std::endl
             << "radius: " << radius << std::endl;
 
-    // Define all image types
-
-
-    typedef itk::ConnectedComponentImageFilter <ImageType, ImageType > ConnectedComponentImageFilterType;
-    typedef itk::RelabelComponentImageFilter <ImageType, ImageType> RelabelComponentImageFilterType;
-    typedef itk::BinaryThresholdImageFilter<ImageType, ImageType> TresholdFilterType;
 
     // Read the image
     std::cout << "*** Reading image ***" << std::endl;
@@ -60,7 +52,14 @@ int main(int argc, char *argv[]) {
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(imageFilename);
 
-    ImageType::Pointer input = reader->GetOutput();
+    //Extract largest object (if there are multiple)
+    LabelImage* input_objects = new LabelImage(reader->GetOutput());
+    if(input_objects->getNumberOfObjects() > 1) {
+        std::cout << "*** Input has " << input_objects->getNumberOfObjects() << " objects. Picking largest ***" <<
+        std::endl;
+    }
+
+    ImageType::Pointer input = input_objects->getLargestObject();
 
     // Perform erosion
     std::cout << "*** Performing Erosion ***" << std::endl;
@@ -83,40 +82,24 @@ int main(int argc, char *argv[]) {
     writeImage(erodeFilter->GetOutput(),"debug_erode.nrrd");
 
     // If as a result we have more than one component
-    ConnectedComponentImageFilterType::Pointer connectedComponentFilter = ConnectedComponentImageFilterType::New();
-    connectedComponentFilter->SetInput(erodeFilter->GetOutput());
-    connectedComponentFilter->Update();
-    if(connectedComponentFilter->GetObjectCount() > 1) {
-        std::cout << "*** After Erosion, "<<connectedComponentFilter->GetObjectCount()<<" objects found. Picking largest ***" << std::endl;
+    LabelImage* eroded_objects = new LabelImage(erodeFilter->GetOutput());
+    if(eroded_objects->getNumberOfObjects() > 1) {
+        std::cout << "*** After Erosion, "<<eroded_objects->getNumberOfObjects()<<" objects found. Picking largest ***" << std::endl;
         // --> pick largest as foreground, rest as background
-        RelabelComponentImageFilterType::Pointer relabelComponentImageFilter = RelabelComponentImageFilterType::New();
-        relabelComponentImageFilter->SetInput(connectedComponentFilter->GetOutput());
-        auto fgThresholdFilter = TresholdFilterType::New();
-        fgThresholdFilter->SetInput(relabelComponentImageFilter->GetOutput());
-        fgThresholdFilter->SetLowerThreshold(1);
-        fgThresholdFilter->SetUpperThreshold(1);
-        fgThresholdFilter->SetInsideValue(1);
-        fgThresholdFilter->SetOutsideValue(0);
-        fgThresholdFilter->Update();
+        ImageType::Pointer foreground_image = eroded_objects->getLargestObject();
 
-        writeImage(fgThresholdFilter->GetOutput(),"debug_fg.nrrd");
+        writeImage(foreground_image,"debug_fg.nrrd");
 
-        auto bgThresholdFilter = TresholdFilterType::New();
-        bgThresholdFilter->SetInput(relabelComponentImageFilter->GetOutput());
-        bgThresholdFilter->SetLowerThreshold(2);
-        bgThresholdFilter->SetUpperThreshold(255);
-        bgThresholdFilter->SetInsideValue(1);
-        bgThresholdFilter->SetOutsideValue(0);
-        bgThresholdFilter->Update();
+        ImageType::Pointer background_image = eroded_objects->getAllButLargestObject();
 
-        writeImage(bgThresholdFilter->GetOutput(),"debug_bg.nrrd");
+        writeImage(background_image,"debug_bg.nrrd");
 
         // --> Set up the graph cut
         typedef itk::ImageGraphCut3DFilter<ImageType, ImageType, ImageType, ImageType> GraphCutFilterType;
         GraphCutFilterType::Pointer graphCutFilter = GraphCutFilterType::New();
         graphCutFilter->SetInputImage(input);
-        graphCutFilter->SetForegroundImage(fgThresholdFilter->GetOutput());
-        graphCutFilter->SetBackgroundImage(bgThresholdFilter->GetOutput());
+        graphCutFilter->SetForegroundImage(foreground_image);
+        graphCutFilter->SetBackgroundImage(background_image);
 
         // --> Set graph cut parameters
         graphCutFilter->SetVerboseOutput(true);
@@ -135,22 +118,11 @@ int main(int argc, char *argv[]) {
 
         // get largest component - just in case there are small disjoint parts creeping in...
         std::cout << "*** Writing Result ***" << std::endl;
-        connectedComponentFilter->SetInput(graphCutFilter->GetOutput());
-        connectedComponentFilter->Update();
-        if(connectedComponentFilter->GetObjectCount() > 1) {
-            std::cout << "*** After graphcut " << connectedComponentFilter->GetObjectCount() <<
-            " objects found, getting largest ***" << std::endl;
-        }
-        relabelComponentImageFilter->SetInput(connectedComponentFilter->GetOutput());
-        auto thresholdFilter = TresholdFilterType::New();
-        thresholdFilter->SetInput(relabelComponentImageFilter->GetOutput());
-        thresholdFilter->SetLowerThreshold(1);
-        thresholdFilter->SetUpperThreshold(1);
-        thresholdFilter->SetInsideValue(1);
-        thresholdFilter->SetOutsideValue(0);
-        thresholdFilter->Update();
 
-        writeImage(thresholdFilter->GetOutput(),outputFilename);
+        LabelImage* graphcut_objects = new LabelImage(graphCutFilter->GetOutput());
+        ImageType::Pointer output = graphcut_objects->getLargestObject();
+
+        writeImage(output,outputFilename);
 
 
     } else {
