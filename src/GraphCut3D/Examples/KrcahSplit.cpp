@@ -27,11 +27,12 @@ void writeImage(ImageType::Pointer image, std::string path);
 */
 int main(int argc, char *argv[]) {
     // Verify arguments
-    if (argc != 4) {
-        std::cerr << "Required: image.mhd output.mhd radius" << std::endl;
+    if (argc < 4) {
+        std::cerr << "Required: image.mhd output.mhd radius debug_prefix(optional)" << std::endl;
         std::cerr << "image.mhd:           3D binary image mask, background is 0" << std::endl;
         std::cerr << "output.mhd:          3D binary image mask of largest split object" << std::endl;
         std::cerr << "radius               Radius of sphere for 3D binary erosion" << std::endl;
+        std::cerr << "debug_prefix         (Optional) if present, intermediate images are saved with this prefix." << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -40,11 +41,19 @@ int main(int argc, char *argv[]) {
     std::string outputFilename = argv[2];
     int radius = atoi(argv[3]);               // Erosion sphere radius
 
+    bool verbose = false;
+    std::string prefix = "";
+
     // Print arguments
     std::cout << "imageFilename: " << imageFilename << std::endl
             << "outputFilename: " << outputFilename << std::endl
             << "radius: " << radius << std::endl;
 
+    if (argc > 4){
+        verbose = true;
+        prefix = argv[4];
+        std::cout <<"Verbose output, saving intermediate images with prefix "<<prefix<<std::endl;
+    }
 
     // Read the image
     std::cout << "*** Reading image ***" << std::endl;
@@ -79,7 +88,7 @@ int main(int argc, char *argv[]) {
     erodeFilter->SetErodeValue(1);
     erodeFilter->Update();
 
-    writeImage(erodeFilter->GetOutput(),"debug_erode.nrrd");
+    if (verbose) writeImage(erodeFilter->GetOutput(),prefix + "_debug_erode.nrrd");
 
     // If as a result we have more than one component
     LabelImage* eroded_objects = new LabelImage(erodeFilter->GetOutput());
@@ -88,11 +97,11 @@ int main(int argc, char *argv[]) {
         // --> pick largest as foreground, rest as background
         ImageType::Pointer foreground_image = eroded_objects->getLargestObject();
 
-        writeImage(foreground_image,"debug_fg.nrrd");
+        if (verbose) writeImage(foreground_image,prefix + "_debug_fg.nrrd");
 
         ImageType::Pointer background_image = eroded_objects->getAllButLargestObject();
 
-        writeImage(background_image,"debug_bg.nrrd");
+        if (verbose) writeImage(background_image,prefix + "_debug_bg.nrrd");
 
         // --> Set up the graph cut
         typedef itk::ImageGraphCut3DFilter<ImageType, ImageType, ImageType, ImageType> GraphCutFilterType;
