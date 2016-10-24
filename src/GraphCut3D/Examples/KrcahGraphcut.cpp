@@ -20,15 +20,14 @@
 */
 int main(int argc, char *argv[]) {
     // Verify arguments
-    if (argc != 8) {
-        std::cerr << "Required: image.mhd foregroundMask.mhd backgroundMask.mhd output.mhd sigma boundaryDirection lambda" << std::endl;
+    if (argc != 7) {
+        std::cerr << "Required: image.mhd foregroundMask.mhd backgroundMask.mhd output.mhd sigma lambda" << std::endl;
         std::cerr << "image.mhd:           3D image sheetness measure -1.0 to 1.0" << std::endl;
         std::cerr << "foregroundMask.mhd:  3D image non-zero pixels indicating foreground and 0 elsewhere" << std::endl;
         std::cerr << "backgroundMask.mhd:  3D image non-zero pixels indicating background and 0 elsewhere" << std::endl;
         std::cerr << "output.mhd:          3D image resulting segmentation" << std::endl;
         std::cerr << "                     Foreground as 127 and Background as 255" << std::endl;
         std::cerr << "sigma                estimated noise in boundary term, try 0.2" << std::endl;
-        std::cerr << "boundaryDirection    0->bidirectional; 1->bright to dark; 2->dark to bright, try 1" << std::endl;
         std::cerr << "lambda               boundary term weight, try 5.0" << std::endl;
         return EXIT_FAILURE;
     }
@@ -39,8 +38,7 @@ int main(int argc, char *argv[]) {
     std::string backgroundFilename = argv[3];   // This image should have non-zero pixels indicating background pixels and 0 elsewhere.
     std::string outputFilename = argv[4];
     double sigma = atof(argv[5]);               // Noise parameter
-    int boundaryDirection = atoi(argv[6]);      // 0->bidirectional; 1->bright to dark; 2->dark to bright
-    double lambda = atof(argv[7]);               // Boundary term weight
+    double lambda = atof(argv[6]);               // Boundary term weight
 
     // Print arguments
     std::cout << "imageFilename: " << imageFilename << std::endl
@@ -48,7 +46,6 @@ int main(int argc, char *argv[]) {
             << "backgroundFilename: " << backgroundFilename << std::endl
             << "outputFilename: " << outputFilename << std::endl
             << "sigma: " << sigma << std::endl
-            << "boundaryDirection: " << boundaryDirection << std::endl
             << "lambda: " << lambda << std::endl;
 
     // Define all image types
@@ -84,16 +81,7 @@ int main(int argc, char *argv[]) {
     // Set graph cut parameters
     graphCutFilter->SetVerboseOutput(true);
     graphCutFilter->SetSigma(sigma);
-    switch (boundaryDirection) {
-        case 1:
-            graphCutFilter->SetBoundaryDirectionTypeToBrightDark();
-            break;
-        case 2:
-            graphCutFilter->SetBoundaryDirectionTypeToDarkBright();
-            break;
-        default:
-            graphCutFilter->SetBoundaryDirectionTypeToNoDirection();
-    }
+    graphCutFilter->SetBoundaryDirectionTypeToBrightDark();
     graphCutFilter->SetLambda(lambda);
 
     // Define the color values of the output
