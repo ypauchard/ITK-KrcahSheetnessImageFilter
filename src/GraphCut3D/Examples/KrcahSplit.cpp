@@ -23,13 +23,16 @@ typedef itk::Image<unsigned char, 3> ImageType;
 //function
 void writeImage(ImageType::Pointer image, std::string path);
 
+//TODO: Make more practical by iterating through multiple objects in input and after graphcut
+//TODO: Should output be a label image or multiple image masks?
+
 /** This example picks the largest component of the input mask and tries to split it using erosion and graphcut.
 */
 int main(int argc, char *argv[]) {
     // Verify arguments
     if (argc < 4) {
         std::cerr << "Required: image.mhd output.mhd radius debug_prefix(optional)" << std::endl;
-        std::cerr << "image.mhd:           3D binary image mask, background is 0" << std::endl;
+        std::cerr << "image.mhd:           3D binary image mask, object  is 1, background is 0" << std::endl;
         std::cerr << "output.mhd:          3D binary image mask of largest split object" << std::endl;
         std::cerr << "radius               Radius of sphere for 3D binary erosion" << std::endl;
         std::cerr << "debug_prefix         (Optional) if present, intermediate images are saved with this prefix." << std::endl;
@@ -49,10 +52,11 @@ int main(int argc, char *argv[]) {
             << "outputFilename: " << outputFilename << std::endl
             << "radius: " << radius << std::endl;
 
+    // Check if intermediate images should be saved
     if (argc > 4){
         verbose = true;
         prefix = argv[4];
-        std::cout <<"Verbose output, saving intermediate images with prefix "<<prefix<<std::endl;
+        std::cout <<"debug_prefix: '"<<prefix<<"' - saving intermediate images (.nrrd) "<<std::endl;
     }
 
     // Read the image
@@ -61,7 +65,7 @@ int main(int argc, char *argv[]) {
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(imageFilename);
 
-    //Extract largest object (if there are multiple)
+    //Not working on multiple objects -> Extract largest object
     LabelImage* input_objects = new LabelImage(reader->GetOutput());
     if(input_objects->getNumberOfObjects() > 1) {
         std::cout << "*** Input has " << input_objects->getNumberOfObjects() << " objects. Picking largest ***" <<
@@ -70,6 +74,7 @@ int main(int argc, char *argv[]) {
 
     ImageType::Pointer input = input_objects->getLargestObject();
 
+    //TODO: refactor into a function?
     // Perform erosion
     std::cout << "*** Performing Erosion ***" << std::endl;
     typedef itk::BinaryBallStructuringElement<
@@ -90,7 +95,7 @@ int main(int argc, char *argv[]) {
 
     if (verbose) writeImage(erodeFilter->GetOutput(),prefix + "_debug_erode.nrrd");
 
-    // If as a result we have more than one component
+    // If after erosion we have more than one object -> separate by graphcut
     LabelImage* eroded_objects = new LabelImage(erodeFilter->GetOutput());
     if(eroded_objects->getNumberOfObjects() > 1) {
         std::cout << "*** After Erosion, "<<eroded_objects->getNumberOfObjects()<<" objects found. Picking largest ***" << std::endl;
@@ -125,7 +130,7 @@ int main(int argc, char *argv[]) {
         std::cout << "*** Performing Graph Cut ***" << std::endl;
         graphCutFilter->Update();
 
-        // get largest component - just in case there are small disjoint parts creeping in...
+        // --> get largest component - just in case there are small disjoint parts creeping in...
         std::cout << "*** Writing Result ***" << std::endl;
 
         LabelImage* graphcut_objects = new LabelImage(graphCutFilter->GetOutput());

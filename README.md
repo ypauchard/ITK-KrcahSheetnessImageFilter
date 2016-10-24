@@ -24,7 +24,13 @@ cd src/GraphCut3D/data/test/left_femur
 
 **Post-processing**
 
-Not implemented.
+`./KrcahSplit /path/to/outputGraphcut /path/to/outputSplitObject erosion_radius intermediate_image_prefix(optional) `
+
+Example: 
+```
+cd src/GraphCut3D/data/test/left_femur
+../../../../../bin/KrcahSplit sheetness_graphcut.nrrd sheetness_graphcut_split.nrrd 3 sheetness
+```
 
 ## Build Instruction
 ```
