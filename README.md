@@ -14,12 +14,12 @@ cd src/GraphCut3D/data/test/left_femur
 
 **Perform Graphcut**
 
-`./ImageGraphCut3DSegmentationExample /path/to/outputSheetness /path/to/foreground /path/to/background /path/to/outputGraphcut sigma lambda `
+`./KrcahGraphcut /path/to/outputSheetness /path/to/foreground /path/to/background /path/to/outputGraphcut sigma lambda `
 
 Example: 
 ```
 cd src/GraphCut3D/data/test/left_femur
-../../../../../bin/ImageGraphCut3DSegmentationExample sheetness.nrrd sheetness_foreground.nrrd sheetness_background.nrrd sheetness_graphcut.nrrd 0.2 5.0
+../../../../../bin/KrcahGraphcut sheetness.nrrd sheetness_foreground.nrrd sheetness_background.nrrd sheetness_graphcut.nrrd 0.2 5.0
 ```
 
 **Post-processing**
