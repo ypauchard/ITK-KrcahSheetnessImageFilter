@@ -1,3 +1,13 @@
+/**
+ *  Image GraphCut 3D Segmentation
+ *
+ *  Copyright (c) 2016, Zurich University of Applied Sciences, School of Engineering, T. Fitze, Y. Pauchard
+ *
+ *  Licensed under GNU General Public License 3.0 or later.
+ *  Some rights reserved.
+ */
+
+
 #ifndef __LabelImage_h_
 #define __LabelImage_h_
 
