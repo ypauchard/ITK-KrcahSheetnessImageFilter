@@ -1,6 +1,8 @@
 ## Description
 Implementation of graphcut segmentation based on a sheetness image filter as described by Krcah et. al.
 
+If you are interested in the original implementation it is now available [here](https://github.com/mkrcah/bone-segmentation)
+
 ## Usage
 **Create the sheetness image, and foreground and background masks**
 
