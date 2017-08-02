@@ -10,7 +10,11 @@ namespace itk {
     // suggested values by Krcah el. al.
             : m_GaussVariance(1) // =s
             , m_ScalingConstant(10) // =k
-            , m_Alpha(0.5), m_Beta(0.5), m_Gamma(0.25) {
+            , m_Alpha(0.5), m_Beta(0.5), m_Gamma(0.25) 
+            {
+        m_SheetnessScales.push_back(0.75);
+        m_SheetnessScales.push_back(1.00);
+
         this->SetNumberOfRequiredInputs(1);
     }
 
@@ -25,18 +29,30 @@ namespace itk {
         // get input
         typename InputImageType::ConstPointer input(this->GetInput());
 
-        // calc sheetness with the 2 sigmas
-        typename OutputImageType::Pointer resultSigma075 = generateSheetnessWithSigma(input, 0.75);
-        typename OutputImageType::Pointer resultSigma100 = generateSheetnessWithSigma(input, 1.0);
+        // assert we have a valid m_SheetnessScales
+        assert(m_SheetnessScales.size() > 0);
 
-        // combine results
-        typename MaximumAbsoluteValueFilterType::Pointer maximumAbsoluteValueFilter = MaximumAbsoluteValueFilterType::New();
-        maximumAbsoluteValueFilter->SetInput1(resultSigma075);
-        maximumAbsoluteValueFilter->SetInput2(resultSigma100);
+        // Calculate first sheetness
+        typename OutputImageType::Pointer sheetnessOutputImageTypePointer = generateSheetnessWithSigma(input, m_SheetnessScales.at(0));
 
-        // copy output from last filter
-        maximumAbsoluteValueFilter->Update();
-        this->GetOutput()->Graft(maximumAbsoluteValueFilter->GetOutput());
+        if (m_SheetnessScales.size() > 1) { // need for std::next()
+            for(SheetnessScalesType::iterator scalesIterator = std::next(m_SheetnessScales.begin()); scalesIterator != m_SheetnessScales.end(); ++scalesIterator) {
+                // Calculte the remaining (n-1) sheetnesses
+                typename OutputImageType::Pointer tempSheetnessOutputImageTypePointer = generateSheetnessWithSigma(input, (*scalesIterator));
+
+                // Take abs max
+                typename MaximumAbsoluteValueFilterType::Pointer maximumAbsoluteValueFilter = MaximumAbsoluteValueFilterType::New();
+                maximumAbsoluteValueFilter->SetInput1(sheetnessOutputImageTypePointer);
+                maximumAbsoluteValueFilter->SetInput2(tempSheetnessOutputImageTypePointer);
+                maximumAbsoluteValueFilter->Update();
+
+                // Save max and move on
+                sheetnessOutputImageTypePointer = maximumAbsoluteValueFilter->GetOutput();
+            }
+        }
+
+        // copy output
+        this->GetOutput()->Graft(sheetnessOutputImageTypePointer);
     }
 
     template<typename TInput, typename TOutput>

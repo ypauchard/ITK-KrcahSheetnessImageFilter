@@ -15,6 +15,8 @@
 #include "KrcahSheetnessImageFilter.h"
 #include "TraceImageFilter.h"
 
+#include <vector>
+
 namespace itk {
     template<typename TInput, typename TOutput>
     class ITK_EXPORT KrcahSheetnessFeatureGenerator : public ImageToImageFilter<TInput, TOutput> {
@@ -34,6 +36,7 @@ namespace itk {
         typedef TInput InputImageType;
         typedef Image<InternalPixelType, NDimension> InternalImageType;
         typedef TOutput OutputImageType;
+        typedef std::vector<double> SheetnessScalesType; // 1-dimensional vector of sigmas
 
         void SetGaussVariance(double d) {
             m_GaussVariance = d;
@@ -55,6 +58,10 @@ namespace itk {
             m_Gamma = d;
         }
 
+        void SetSheetnessScales(SheetnessScalesType v) {
+            m_SheetnessScales = v;
+        }
+
     protected:
         KrcahSheetnessFeatureGenerator();
 
@@ -73,6 +80,7 @@ namespace itk {
         double m_Alpha;
         double m_Beta;
         double m_Gamma;
+        SheetnessScalesType m_SheetnessScales;
 
         typename OutputImageType::Pointer generateSheetnessWithSigma(typename InputImageType::ConstPointer img, float sigma);
 
