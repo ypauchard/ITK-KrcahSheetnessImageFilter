@@ -54,7 +54,7 @@ namespace itk {
             m_Beta = d;
         }
 
-        void SetGamme(double d) {
+        void SetGamma(double d) {
             m_Gamma = d;
         }
 
