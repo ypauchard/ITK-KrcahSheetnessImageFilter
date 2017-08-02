@@ -23,13 +23,13 @@ namespace itk {
     template<typename TInputImage1, typename TInputImage2, typename TOutputImage>
     class MaximumAbsoluteValueImageFilter :
             public BinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage,
-                    Functor::MaximumAbsoluteValue<typename TInputImage1::PixelType, typename TInputImage1::PixelType,
+                    Functor::MaximumAbsoluteValue<typename TInputImage1::PixelType, typename TInputImage2::PixelType,
                             typename TOutputImage::PixelType> > {
     public:
         // itk requirements
         typedef MaximumAbsoluteValueImageFilter Self;
         typedef BinaryFunctorImageFilter<TInputImage1, TInputImage2, TOutputImage,
-                Functor::MaximumAbsoluteValue<typename TInputImage1::PixelType, typename TInputImage1::PixelType,
+                Functor::MaximumAbsoluteValue<typename TInputImage1::PixelType, typename TInputImage2::PixelType,
                         typename TOutputImage::PixelType> > Superclass;
         typedef SmartPointer<Self> Pointer;
         typedef SmartPointer<const Self> ConstPointer;
