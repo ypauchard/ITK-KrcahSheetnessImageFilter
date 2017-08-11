@@ -7,13 +7,19 @@ endif(COMMAND cmake_policy)
 # Turn on with 'cmake -Dmyvarname=ON'.
 option(test "Build all tests." OFF) # Makes boolean 'test' available.
 
-project(Testbench)
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Testbench_SOURCE_DIR}/bin)
+SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
+# ITK
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
 
-subdirs(src)
+# Include this project
+include_directories(include)
+
+option(BUILD_EXAMPLES "Build examples." ON)
+if(BUILD_EXAMPLES)
+	subdirs(example)
+endif(BUILD_EXAMPLES)
 
 ################################
 # gtest
@@ -26,7 +32,7 @@ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 ##############
 # Unit Tests
 ##############
-add_executable(runUnitTests src/test_Sheetness.cxx)
+add_executable(runUnitTests test/test_Sheetness.cxx)
 target_link_libraries(runUnitTests gtest gtest_main)
 
 endif()
