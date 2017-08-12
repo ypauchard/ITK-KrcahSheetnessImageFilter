@@ -1,12 +1,10 @@
 #include "itkImageFileReader.h"
 #include "itkImageFileWriter.h"
-#include "itkDescoteauxSheetnessFeatureGenerator.h"
+#include "itkDescoteauxSheetnessImageFilter.h"
 
-#include "itkDiscreteGaussianImageFilter.h"
-#include "itkSubtractImageFilter.h"
-#include "itkMultiplyImageFilter.h"
-#include "itkAddImageFilter.h"
-#include "itkCastImageFilter.h"
+#include "itkDescoteauxSheetnessImageFilter.h"
+#include "itkHessianRecursiveGaussianImageFilter.h"
+#include "itkSymmetricEigenAnalysisImageFilter.h"
 
 // Templating
 const unsigned int IMAGE_DIMENSION = 3;
@@ -16,19 +14,18 @@ typedef itk::Image<InputPixelType, IMAGE_DIMENSION> InputImageType;
 typedef itk::Image<SheetnessPixelType, IMAGE_DIMENSION> SheetnessImageType;
 
 typedef itk::ImageFileReader<InputImageType> FileReaderType;
-typedef itk::ImageFileWriter<InputImageType> UnsharpWriterType;
 typedef itk::ImageFileWriter<SheetnessImageType> SheetnessWriterType;
 
-typedef itk::DescoteauxSheetnessFeatureGenerator<IMAGE_DIMENSION> DescoteauxSheetnessFeatureGeneratorType;
-typedef DescoteauxSheetnessFeatureGeneratorType::SpatialObjectType    SpatialObjectType;
-typedef itk::ImageSpatialObject< IMAGE_DIMENSION, InputPixelType  > InputImageSpatialObjectType;
-typedef itk::ImageSpatialObject< IMAGE_DIMENSION, SheetnessPixelType > OutputImageSpatialObjectType;
+typedef itk::HessianRecursiveGaussianImageFilter< InputImageType >  HessianFilterType;
+typedef HessianFilterType::OutputImageType                          HessianImageType;
+typedef HessianImageType::PixelType                                 HessianPixelType;
 
-typedef itk::CastImageFilter<InputImageType, InputImageType> CastFilterType;
-typedef itk::DiscreteGaussianImageFilter<InputImageType, InputImageType> GaussianFilterType;
-typedef itk::SubtractImageFilter<InputImageType, InputImageType, InputImageType> SubstractFilterType;
-typedef itk::MultiplyImageFilter<InputImageType, InputImageType, InputImageType> MultiplyFilterType;
-typedef itk::AddImageFilter<InputImageType, InputImageType, InputImageType> AddFilterType;
+typedef  itk::FixedArray< double, HessianPixelType::Dimension >     EigenValueArrayType;
+typedef  itk::Image< EigenValueArrayType, IMAGE_DIMENSION >               EigenValueImageType;
+
+typedef  itk::SymmetricEigenAnalysisImageFilter<HessianImageType, EigenValueImageType>     EigenAnalysisFilterType;
+typedef itk::DescoteauxSheetnessImageFilter< EigenValueImageType, SheetnessImageType >   DescoteauxSheetnessFilterType;
+
 
 int main(int argc, char *argv[]) {
     // Constants
@@ -36,17 +33,18 @@ int main(int argc, char *argv[]) {
     double alpha = 0.5;
     double beta = 0.5;
     double c = 0.5;
-    double k = 10;
-    double unsharpSigma = 1;
 
     // Verify arguments
-    if (argc != 4) {
-        std::cerr << "Required: inputImage.mhd outputSheetness.mhd outputUnsharp.mhd" << std::endl;
+    if (argc != 5) {
+        std::cerr << "Required: inputImage.mhd outputSheetness.mhd sigmas normalization_constant" << std::endl;
         std::cerr << "inputImage.mhd:        3D image in Hounsfield Units -1024 to 3071" << std::endl;
         std::cerr << "outputSheetness.mhd:   3D image sheetness results." << std::endl;
-        std::cerr << "outputUnsharp.mhd:     3D image unsharp image." << std::endl;
+        std::cerr << "sigmas:                Sigma value (double)" << std::endl;
+        std::cerr << "normalization_constan: 3D image sheetness results." << std::endl;
         return EXIT_FAILURE;
     }
+    sigma = atof(argv[3]);
+    c = atof(argv[4]);
 
     // read input
     std::cout << "Reading input " << argv[1] << std::endl;
@@ -54,59 +52,32 @@ int main(int argc, char *argv[]) {
     reader->SetFileName(argv[1]);
     reader->Update();
 
-    std::cout << "Generating unsharp of input" << std::endl;
-    // I*G (discrete gauss)
-    typename GaussianFilterType::Pointer gaussFilter = GaussianFilterType::New();
-    gaussFilter->SetVariance(unsharpSigma);
-    gaussFilter->SetInput(reader->GetOutput());
+    // Hessian + EigenAnalysis
+    std::cout << "Computing Hessian and performing Eigen-analysis" << std::endl;
+    HessianFilterType::Pointer hessian = HessianFilterType::New();
+    hessian->SetInput(reader->GetOutput());
+    hessian->SetSigma(sigma);
 
-    // I - (I*G)
-    typename SubstractFilterType::Pointer subtractFilter = SubstractFilterType::New();
-    subtractFilter->SetInput1(reader->GetOutput());
-    subtractFilter->SetInput2(gaussFilter->GetOutput());
-
-    // k(I-(I*G))
-    typename MultiplyFilterType::Pointer multiplyFilter = MultiplyFilterType::New();
-    multiplyFilter->SetInput(subtractFilter->GetOutput());
-    multiplyFilter->SetConstant(k);
-
-    // I+k*(I-(I*G))
-    typename AddFilterType::Pointer addFilter = AddFilterType::New();
-    addFilter->SetInput1(reader->GetOutput());
-    addFilter->SetInput2(multiplyFilter->GetOutput());
-    addFilter->Update();
-
-    // write output
-    std::cout << "writing unsharp to file " << argv[3] << std::endl;
-    typename UnsharpWriterType::Pointer unsharpWriter = UnsharpWriterType::New();
-    unsharpWriter->SetFileName(argv[3]);
-    unsharpWriter->SetInput(addFilter->GetOutput());
-    unsharpWriter->Update();
+    EigenAnalysisFilterType::Pointer eigen = EigenAnalysisFilterType::New();
+    eigen->SetDimension(IMAGE_DIMENSION);
+    eigen->SetInput(hessian->GetOutput());
+    eigen->Update();
 
     // compute sheetness
     std::cout << "Computing sheetness..." << std::endl;
-    typename InputImageSpatialObjectType::Pointer inputObject = InputImageSpatialObjectType::New();
-    inputObject->SetImage(addFilter->GetOutput());
-
-    typename DescoteauxSheetnessFeatureGeneratorType::Pointer sheetnessFilterGenerator = DescoteauxSheetnessFeatureGeneratorType::New();
-    sheetnessFilterGenerator->SetInput(inputObject);
-    sheetnessFilterGenerator->SetSigma(sigma);
-    sheetnessFilterGenerator->SetSheetnessNormalization(alpha);
-    sheetnessFilterGenerator->SetBloobinessNormalization(beta);
-    sheetnessFilterGenerator->SetNoiseNormalization(c);
-    sheetnessFilterGenerator->DetectBrightSheetsOn();
-    sheetnessFilterGenerator->Update();
-
-    typename SpatialObjectType::ConstPointer sheetnessFeature = sheetnessFilterGenerator->GetFeature();
-    typename OutputImageSpatialObjectType::ConstPointer outputObject = 
-    dynamic_cast< const OutputImageSpatialObjectType * >( sheetnessFeature.GetPointer() );
-    typename SheetnessImageType::ConstPointer sheetnessImage = outputObject->GetImage();
+    DescoteauxSheetnessFilterType::Pointer sheetnessFilter = DescoteauxSheetnessFilterType::New();
+    sheetnessFilter->SetInput(eigen->GetOutput());
+    sheetnessFilter->SetDetectBrightSheets(true);
+    sheetnessFilter->SetSheetnessNormalization(alpha);
+    sheetnessFilter->SetBloobinessNormalization(beta);
+    sheetnessFilter->SetNoiseNormalization(c);
+    sheetnessFilter->Update();
 
     // write output
     std::cout << "writing sheetness to file " << argv[2] << std::endl;
     typename SheetnessWriterType::Pointer writer = SheetnessWriterType::New();
     writer->SetFileName(argv[2]);
-    writer->SetInput(sheetnessImage);
+    writer->SetInput(sheetnessFilter->GetOutput());
     writer->Update();
 
     return EXIT_SUCCESS;
