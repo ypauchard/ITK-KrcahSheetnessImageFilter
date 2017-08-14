@@ -67,7 +67,7 @@ namespace itk {
 
         virtual ~KrcahSheetnessFeatureGenerator();
 
-        void GenerateData();
+        void GenerateData() ITK_OVERRIDE;
 
     private:
         KrcahSheetnessFeatureGenerator(const Self &);

@@ -1,1 +1,1 @@
-subdirs(Descoteaux Krcah)
+subdirs(Descoteaux DescoteauxWithScaling Krcah)
