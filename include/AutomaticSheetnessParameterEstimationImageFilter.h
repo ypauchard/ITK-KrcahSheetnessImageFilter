@@ -25,6 +25,9 @@ public:
   itkSetMacro(Label,TLabelPixelType);
   itkGetMacro(Label,TLabelPixelType);
 
+  itkSetMacro(Scale,double);
+  itkGetMacro(Scale,double);
+
   itkGetMacro(Alpha,double);
   itkGetMacro(Beta,double);
   itkGetMacro(C,double);
@@ -60,6 +63,7 @@ private:
   double m_Alpha;
   double m_Beta;
   double m_C;
+  double m_Scale;
   TLabelPixelType m_Label;
 
   // Filter types

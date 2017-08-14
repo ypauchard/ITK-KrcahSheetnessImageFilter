@@ -131,6 +131,7 @@ int main(int argc, char *argv[]) {
     scalerFilter->SetInput(eigen->GetOutput());
     scalerFilter->SetLabelInput(erosionFilter->GetOutput());
     scalerFilter->SetLabel(1);
+    scalerFilter->SetScale(0.05f);
     scalerFilter->Update();
 
     std::cout << "Determined parameters: " << std::endl;

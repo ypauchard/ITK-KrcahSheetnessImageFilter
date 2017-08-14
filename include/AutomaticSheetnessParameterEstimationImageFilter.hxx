@@ -5,8 +5,8 @@ namespace itk {
     template <class TInputImage, class TLabelImage>
     AutomaticSheetnessParameterEstimationImageFilter<TInputImage, TLabelImage>
     ::AutomaticSheetnessParameterEstimationImageFilter()
-        : m_Alpha(0.5), m_Beta(0.5), m_C(0.5),
-        m_Label(1.0f)
+        : m_Alpha(0.5f), m_Beta(0.5f), m_C(0.5f),
+        m_Label(1.0f), m_Scale(0.1f)
     {
         this->SetNumberOfRequiredInputs(1);
     }
@@ -30,8 +30,7 @@ namespace itk {
         statisticsFilter->Update();
 
         // Set C
-        // m_C = static_cast<double>(0.5 * statisticsFilter->GetMaximum(this->GetLabel()));
-        m_C = static_cast<double>(0.1 * statisticsFilter->GetMaximum(this->GetLabel()));
+        m_C = static_cast<double>(this->GetScale() * statisticsFilter->GetMaximum(this->GetLabel()));
 
         // Set output
         this->GetOutput()->Graft(this->GetInput());
