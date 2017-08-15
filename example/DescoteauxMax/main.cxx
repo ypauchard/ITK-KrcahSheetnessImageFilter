@@ -190,6 +190,7 @@ int main(int argc, char *argv[]) {
     reader->SetFileName(db.inputFileName);
     reader->Update();
 
+    std::cout << "Preprocessing..." << std::endl;
     // Threshold
     typename BinaryThresholdImageFilterType::Pointer binaryFilter = BinaryThresholdImageFilterType::New();
     binaryFilter->SetInput(reader->GetOutput());
