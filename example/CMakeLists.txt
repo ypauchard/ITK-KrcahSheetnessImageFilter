@@ -1,1 +1,1 @@
-subdirs(Descoteaux DescoteauxWithScaling DescoteauxMax Krcah)
+subdirs(Descoteaux DescoteauxWithScaling DescoteauxMax Krcah ModifiedSheetness)
