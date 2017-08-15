@@ -3,6 +3,7 @@
 
 #include "FrobeniusNormImageFilter.h"
 #include "itkLabelStatisticsImageFilter.h"
+#include "itkStatisticsImageFilter.h"
 
 namespace itk
 {
@@ -73,7 +74,7 @@ private:
 
   typedef FrobeniusNormImageFilter<TInputImage, TFrobeniusOutputImage> FrobeniusNormImageFilterType;
   typedef LabelStatisticsImageFilter<TFrobeniusOutputImage, TLabelImage> LabelStatisticsImageFilterType;
-
+  typedef StatisticsImageFilter<TFrobeniusOutputImage> StatisticsImageFilterType;
 }; // class AutomaticSheetnessParameterEstimationImageFilter
 
 } // namespace itk

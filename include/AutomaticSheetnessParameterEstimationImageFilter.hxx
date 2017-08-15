@@ -24,13 +24,22 @@ namespace itk {
         frobeniusFilter->SetInput(this->GetInput());
 
         // Compute max
-        typename LabelStatisticsImageFilterType::Pointer statisticsFilter = LabelStatisticsImageFilterType::New();
-        statisticsFilter->SetInput(frobeniusFilter->GetOutput());
-        statisticsFilter->SetLabelInput(this->GetLabelInput());
-        statisticsFilter->Update();
+        if (this->GetLabelInput() == ITK_NULLPTR) { // Not verified yet...
+            typename StatisticsImageFilterType::Pointer statisticsFilter = StatisticsImageFilterType::New();
+            statisticsFilter->SetInput(frobeniusFilter->GetOutput());
+            statisticsFilter->Update();
+            
+            // Set C
+            m_C = static_cast<double>(this->GetScale() * statisticsFilter->GetMaximum());
+        } else {
+            typename LabelStatisticsImageFilterType::Pointer statisticsFilter = LabelStatisticsImageFilterType::New();
+            statisticsFilter->SetInput(frobeniusFilter->GetOutput());
+            statisticsFilter->SetLabelInput(this->GetLabelInput());
+            statisticsFilter->Update();
 
-        // Set C
-        m_C = static_cast<double>(this->GetScale() * statisticsFilter->GetMaximum(this->GetLabel()));
+            // Set C
+            m_C = static_cast<double>(this->GetScale() * statisticsFilter->GetMaximum(this->GetLabel()));
+        }
 
         // Set output
         this->GetOutput()->Graft(this->GetInput());
