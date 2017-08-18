@@ -79,14 +79,14 @@ public:
     // }
 
     // Calculate
-    const double Rs = l2 / l3;
+    // const double Rs = l2 / l3;
     // const double Rt = l1 / (l2*l3);
     const double Rt = l1 / vcl_sqrt(l2*l2 + l3*l3);
     const double Rn = vcl_sqrt( l3*l3 + l2*l2 + l1*l1 );
 
     // Calculate sheetness
     sheetness  =         m_DetectBrightSheets * (a3 / l3);
-    sheetness *=         vcl_exp( - ( Rs * Rs ) / ( 2.0 * m_Alpha * m_Alpha ) ); 
+    // sheetness *=         vcl_exp( - ( Rs * Rs ) / ( 2.0 * m_Alpha * m_Alpha ) ); 
     sheetness *=         vcl_exp( - ( Rt * Rt ) / ( 2.0 * m_Beta  * m_Beta  ) ); 
     sheetness *= ( 1.0 - vcl_exp( - ( Rn * Rn ) / ( 2.0 * m_C     * m_C     ) ) ); 
 
