@@ -1,3 +1,3 @@
-set(KrcahSheetnessTests
-    test_Sheetness.cxx
-)
+add_executable(SheetnessUnitTest test_Sheetness.cxx)
+target_link_libraries(SheetnessUnitTest gtest gtest_main)
+add_test(AllTests SheetnessUnitTest)
