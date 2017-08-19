@@ -165,8 +165,7 @@ typename SheetnessImageType::Pointer calculateSheetnessAtScale(
     typename ModifiedSheetnessImageFilterType::Pointer sheetnessFilter = ModifiedSheetnessImageFilterType::New();
     sheetnessFilter->SetInput(scalerFilter->GetOutput());
     sheetnessFilter->DetectBrightSheetsOn();
-    sheetnessFilter->SetSheetnessNormalization(scalerFilter->GetAlpha());
-    sheetnessFilter->SetTubinessNormalization(scalerFilter->GetBeta());
+    sheetnessFilter->SetNormalization(scalerFilter->GetAlpha());
     sheetnessFilter->SetNoiseNormalization(scalerFilter->GetC());
     sheetnessFilter->Update();
 

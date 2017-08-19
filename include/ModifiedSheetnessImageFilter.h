@@ -6,16 +6,15 @@
 
 namespace itk {
 
-namespace Function {  
+namespace Functor {  
   
 template< class TInput, class TOutput>
 class ModifiedSheetness {
 public:
   ModifiedSheetness() {
-    m_Alpha = 0.5; // suggested value in the paper
-    m_Beta  = 0.5; // suggested value in the paper;
-    m_C     = 1.0;
-    m_DetectBrightSheets = -1;  // Detect bright sheets
+    m_Alpha = 0.5;              // Suggested value from Vesselness paper
+    m_C     = 1.0;              // Should be tuned from data
+    m_DetectBrightSheets = -1;  // Detect bright sheets is default
   }
   ~ModifiedSheetness() {}
   bool operator!=( const ModifiedSheetness & ) const {
@@ -73,21 +72,12 @@ public:
       return static_cast<TOutput>( sheetness );
     }
     
-    // if( static_cast<double>( l2 ) < vnl_math::eps ) {
-    //   // If l2 approx. 0, Rt -> inf, sheetness -> 0
-    //   return static_cast<TOutput>( sheetness );
-    // }
-
-    // Calculate
-    // const double Rs = l2 / l3;
-    // const double Rt = l1 / (l2*l3);
     const double Rt = l1 / vcl_sqrt(l2*l2 + l3*l3);
     const double Rn = vcl_sqrt( l3*l3 + l2*l2 + l1*l1 );
 
     // Calculate sheetness
     sheetness  =         m_DetectBrightSheets * (a3 / l3);
-    // sheetness *=         vcl_exp( - ( Rs * Rs ) / ( 2.0 * m_Alpha * m_Alpha ) ); 
-    sheetness *=         vcl_exp( - ( Rt * Rt ) / ( 2.0 * m_Beta  * m_Beta  ) ); 
+    sheetness *=         vcl_exp( - ( Rt * Rt ) / ( 2.0 * m_Alpha  * m_Alpha  ) ); 
     sheetness *= ( 1.0 - vcl_exp( - ( Rn * Rn ) / ( 2.0 * m_C     * m_C     ) ) ); 
 
     return static_cast<TOutput>( sheetness );
@@ -95,10 +85,6 @@ public:
 
   void SetAlpha( double value ) {
     this->m_Alpha = value;
-  }
-
-  void SetBeta( double value ) {
-    this->m_Beta = value;
   }
 
   void SetC( double value ) {
@@ -115,17 +101,16 @@ public:
 
 private:
   double    m_Alpha;
-  double    m_Beta;
   double    m_C;
   double    m_DetectBrightSheets;
 }; // class ModifiedSheetness
-} // namespace Function
+} // namespace Functor
 
 template <class TInputImage, class TOutputImage>
 class ITK_EXPORT ModifiedSheetnessImageFilter :
     public
 UnaryFunctorImageFilter<TInputImage,TOutputImage, 
-                        Function::ModifiedSheetness< typename TInputImage::PixelType, 
+Functor::ModifiedSheetness< typename TInputImage::PixelType, 
                                        typename TOutputImage::PixelType>   >
 {
 public:
@@ -133,7 +118,7 @@ public:
   typedef ModifiedSheetnessImageFilter    Self;
   typedef UnaryFunctorImageFilter<
     TInputImage,TOutputImage, 
-    Function::ModifiedSheetness< 
+    Functor::ModifiedSheetness< 
       typename TInputImage::PixelType, 
       typename TOutputImage::PixelType> >   Superclass;
   typedef SmartPointer<Self>                Pointer;
@@ -147,13 +132,8 @@ public:
                UnaryFunctorImageFilter);
 
   /** Set the normalization term for sheetness */
-  void SetSheetnessNormalization( double value ) {
+  void SetNormalization( double value ) {
     this->GetFunctor().SetAlpha( value );
-  }
-
-  /** Set the normalization term for tubiness. */
-  void SetTubinessNormalization( double value ) {
-    this->GetFunctor().SetBeta( value );
   }
 
   /** Set the normalization term for noise. */
