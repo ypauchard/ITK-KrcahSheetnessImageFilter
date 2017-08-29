@@ -10,6 +10,9 @@
 #include "itkBinaryBallStructuringElement.h"
 #include "itkLabelStatisticsImageFilter.h"
 #include "itkShiftScaleImageFilter.h"
+#include "itkApproximateSignedDistanceMapImageFilter.h"
+#include "itkNumericTraits.h"
+#include "itkSignedMaurerDistanceMapImageFilter.h"
 
 #include "AutomaticSheetnessParameterEstimationImageFilter.h"
 #include "ModifiedSheetnessImageFilter.h"
@@ -21,9 +24,11 @@ const unsigned int IMAGE_DIMENSION = 3;
 typedef short InputPixelType;
 typedef unsigned char MaskPixelType;
 typedef float SheetnessPixelType;
+typedef float DTImagePixelType;
 typedef itk::Image<InputPixelType, IMAGE_DIMENSION> InputImageType;
 typedef itk::Image<MaskPixelType, IMAGE_DIMENSION> MaskImageType;
 typedef itk::Image<SheetnessPixelType, IMAGE_DIMENSION> SheetnessImageType;
+typedef itk::Image<DTImagePixelType, IMAGE_DIMENSION> DTImageType;
 
 typedef itk::ImageFileReader<InputImageType> FileReaderType;
 typedef itk::ImageFileWriter<SheetnessImageType> SheetnessWriterType;
@@ -46,6 +51,8 @@ typedef itk::BinaryBallStructuringElement<MaskImageType::PixelType, IMAGE_DIMENS
 typedef itk::BinaryErodeImageFilter<MaskImageType, MaskImageType, StructuringElementType> BinaryErodeImageFilterType;
 typedef itk::LabelStatisticsImageFilter<InputImageType, MaskImageType> LabelStatisticsImageFilterType;
 typedef itk::ShiftScaleImageFilter<SheetnessImageType, SheetnessImageType> ShiftScaleImageFilterType;
+typedef itk::BinaryThresholdImageFilter<DTImageType, MaskImageType> BinaryThresholdDTImageFilterType;
+typedef itk::SignedMaurerDistanceMapImageFilter<MaskImageType, DTImageType> SignedMaurerDistanceMapImageFilterType;
 
 typedef itk::AutomaticSheetnessParameterEstimationImageFilter<EigenValueImageType, MaskImageType> AutomaticSheetnessParameterEstimationImageFilterType;
 typedef itk::MaximumAbsoluteValueImageFilter<SheetnessImageType, SheetnessImageType, SheetnessImageType> MaximumAbsoluteValueFilterType;
@@ -56,23 +63,25 @@ public:
     TSigmas sigmas;
     InputPixelType threshold;
     double automaticSheetnessScale;
-    double radius;
     double intensityScaling;
+    double dtThreshold;
     std::string inputFileName;
     std::string outputFileName;
+    std::string outputMaskFileName;
 
     ArgumentDatabase(int argc, char *argv[]) :
-         threshold(-750.0f)
+          threshold(200.0f)
+        , dtThreshold(5.0f)
         ,automaticSheetnessScale(0.05f)
-        ,radius(2.5f)
         ,intensityScaling(100.0f)
         ,m_HasFailed(false)
     {
         // Verify arguments
-        if (argc < 5) {
-            std::cerr << "Required: inputImage.mhd outputSheetness.mhd N sigma1 ... sigmaN [intensityScaling] [threshold]" << std::endl;
+        if (argc < 6) {
+            std::cerr << "Required: inputImage.mhd outputSheetness.mhd outputMask.mhd N sigma1 ... sigmaN [intensityScaling] [threshold]" << std::endl;
             std::cerr << "inputImage.mhd:        3D image in Hounsfield Units -1024 to 3071" << std::endl;
             std::cerr << "outputSheetness.mhd:   3D image sheetness results." << std::endl;
+            std::cerr << "outputMask.mhd:        3D image sheetness results." << std::endl;
             std::cerr << "N:                     Number of sigma values" << std::endl;
             std::cerr << "sigma:                 Sigma value (double)" << std::endl;
             std::cerr << "intensityScaling:      Value to scale output by (originally [0,1])" << std::endl;
@@ -84,16 +93,17 @@ public:
         // Parse arguments
         inputFileName = argv[1];
         outputFileName = argv[2];
+        outputMaskFileName = argv[3];
 
-        unsigned int nSigma = atoi(argv[3]);
+        unsigned int nSigma = atoi(argv[4]);
         for (unsigned int i = 0; i < nSigma; i++){
-            sigmas.push_back(atof(argv[4+i]));
-        }
-        if (argc >= 5+nSigma) {
-            automaticSheetnessScale = atof(argv[4+nSigma]);
+            sigmas.push_back(atof(argv[5+i]));
         }
         if (argc >= 6+nSigma) {
-            threshold = atof(argv[5+nSigma]);
+            automaticSheetnessScale = atof(argv[5+nSigma]);
+        }
+        if (argc >= 7+nSigma) {
+            threshold = atof(argv[6+nSigma]);
         }
 
         if (sigmas.size() < 1) {
@@ -118,13 +128,13 @@ private:
 std::ostream &operator<<(std::ostream &os, ArgumentDatabase const &db) { 
     os << "Parameters:" << std::endl;
     os << "  Padding Threshold       " << db.threshold << std::endl;
-    os << "  SE Radius               " << db.radius << std::endl;
     os << "  Sigmas                 ";// one spacing missing intentionally
     for (ArgumentDatabase::TSigmas::const_iterator i = db.sigmas.begin(); i != db.sigmas.end(); ++i)
         os << " " << *i;
     os << std::endl;
     os << "  automaticSheetnessScale " << db.automaticSheetnessScale << std::endl;
     os << "  intensityScaling        " << db.intensityScaling << std::endl;
+    os << "  dtThreshold             " << db.dtThreshold << std::endl;
     return os;
 }
 
@@ -192,26 +202,40 @@ int main(int argc, char *argv[]) {
     // Threshold
     typename BinaryThresholdImageFilterType::Pointer binaryFilter = BinaryThresholdImageFilterType::New();
     binaryFilter->SetInput(reader->GetOutput());
+    // binaryFilter->SetLowerThreshold(db.threshold);
+    // binaryFilter->SetOutsideValue(0);
+    // binaryFilter->SetInsideValue(1);
     binaryFilter->SetLowerThreshold(db.threshold);
+    binaryFilter->SetInsideValue(255);
     binaryFilter->SetOutsideValue(0);
-    binaryFilter->SetInsideValue(1);
+    binaryFilter->Update();
 
-    // Erode
-    StructuringElementType structuringElement;
-    structuringElement.SetRadius(db.radius);
-    structuringElement.CreateStructuringElement();
+    // Distance transform
+    SignedMaurerDistanceMapImageFilterType::Pointer dtFilter = SignedMaurerDistanceMapImageFilterType::New();
+    dtFilter->SetInput(binaryFilter->GetOutput());
 
-    typename BinaryErodeImageFilterType::Pointer erosionFilter = BinaryErodeImageFilterType::New();
-    erosionFilter->SetInput(binaryFilter->GetOutput());
-    erosionFilter->SetKernel(structuringElement);
-    erosionFilter->SetErodeValue(1);
-    erosionFilter->Update();
+    // Threshold the distance transform
+    BinaryThresholdDTImageFilterType::Pointer dtThreshFilter = BinaryThresholdDTImageFilterType::New();
+    dtThreshFilter->SetInput(dtFilter->GetOutput());
+    dtThreshFilter->SetUpperThreshold(db.dtThreshold);
+    dtThreshFilter->SetOutsideValue(0);
+    dtThreshFilter->SetInsideValue(1);
+    dtThreshFilter->Update();
+
+    // Write
+    std::cout << "Writing mask image to " << db.outputMaskFileName << std::endl;
+    MaskWriterType::Pointer maskWriter = MaskWriterType::New();
+    // maskWriter->SetInput(erosionFilter->GetOutput());
+    maskWriter->SetInput(dtThreshFilter->GetOutput());
+    maskWriter->SetFileName(db.outputMaskFileName);
+    maskWriter->Update();
 
     // Loop over sigmas, take maximum value
     std::cout << "Current sigma: " << db.sigmas.at(0) << std::endl;
     typename SheetnessImageType::Pointer sheetnessFilePointer = calculateSheetnessAtScale(
          reader->GetOutput()
-        ,erosionFilter->GetOutput()
+        // ,erosionFilter->GetOutput()
+        ,dtThreshFilter->GetOutput()
         ,db.sigmas.at(0)
         ,db.automaticSheetnessScale
     );
@@ -223,7 +247,8 @@ int main(int argc, char *argv[]) {
             // Calculte the remaining (n-1) sheetnesses
             typename SheetnessImageType::Pointer tempSheetnessFilePointer = calculateSheetnessAtScale(
                  reader->GetOutput()
-                ,erosionFilter->GetOutput()
+                // ,erosionFilter->GetOutput()
+                ,dtThreshFilter->GetOutput()
                 ,*it
                 ,db.automaticSheetnessScale
             );

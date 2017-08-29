@@ -2,235 +2,204 @@
 
 #include "ModifiedSheetnessImageFilter.h"
 
-TEST(ModifiedSheetnessFunctor, int) {
-  typedef int InternalPixelType;
-  const unsigned int DIMENSION = 3;
-  typedef  itk::FixedArray< InternalPixelType, DIMENSION >     EigenValueArrayType;
-  typedef itk::Functor::ModifiedSheetness<EigenValueArrayType, InternalPixelType> FunctorType;
-  FunctorType ModifiedSheetness;
-  EigenValueArrayType eigenValueArray;
+namespace {
+  template <typename T>
+  class ModifiedSheetnessFunctorTest : public ::testing::Test {
+  protected:
+    typedef T InternalPixelType;
+    static const unsigned int DIMENSION = 3;
+    typedef  itk::FixedArray< InternalPixelType, DIMENSION >     EigenValueArrayType;
+    typedef itk::Functor::ModifiedSheetness<EigenValueArrayType, InternalPixelType> FunctorType;
 
-  eigenValueArray[0] = 0;
-  eigenValueArray[1] = 0;
-  eigenValueArray[2] = 0;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), 0);
+    FunctorType mModifiedSheetness;
+    EigenValueArrayType mEigenValueArray;
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 0;
-  eigenValueArray[2] = 0;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.3934693402873666);
+    ModifiedSheetnessFunctorTest() {
+      mModifiedSheetness = FunctorType();
+      mEigenValueArray = EigenValueArrayType();
+    }
+  
+    virtual ~ModifiedSheetnessFunctorTest() {
+      // Nothing to do
+    }
+  };
 
-  eigenValueArray[0] = 0;
-  eigenValueArray[1] = 0;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.3934693402873666);
+    // Define the templates we would like to test
+    typedef ::testing::Types<char, int, char, float> TestingLabelTypes;
+    TYPED_TEST_CASE(ModifiedSheetnessFunctorTest, TestingLabelTypes);
 
-  eigenValueArray[0] = 0;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 0;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.3934693402873666);
+    TYPED_TEST(ModifiedSheetnessFunctorTest, ZeroInput) {
+      this->mEigenValueArray[0] = 0;
+      this->mEigenValueArray[1] = 0;
+      this->mEigenValueArray[2] = 0;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), 0);
+    }
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 0;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.6321205588285578);
+    TYPED_TEST(ModifiedSheetnessFunctorTest, ZeroOneZeroInput) {
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 0;
+      this->mEigenValueArray[2] = 0;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.3934693402873666);
+    
+      this->mEigenValueArray[0] = 0;
+      this->mEigenValueArray[1] = 0;
+      this->mEigenValueArray[2] = 1;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.3934693402873666);
+    
+      this->mEigenValueArray[0] = 0;
+      this->mEigenValueArray[1] = 1;
+      this->mEigenValueArray[2] = 0;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.3934693402873666);
+    }
 
-  eigenValueArray[0] = 2;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.6369467760753132);
+    TYPED_TEST(ModifiedSheetnessFunctorTest, ZeroOneOneInput) {
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 1;
+      this->mEigenValueArray[2] = 0;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.6321205588285578);
+    }
 
-  eigenValueArray[0] = -2;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.6369467760753132);
+    TYPED_TEST(ModifiedSheetnessFunctorTest, SortsOnAbsoluteValueWithBrightSheets) {
+      this->mEigenValueArray[0] = 2;
+      this->mEigenValueArray[1] = 1;
+      this->mEigenValueArray[2] = 1;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.760871035093);
 
-  ModifiedSheetness.DetectDarkSheetsOn();
-  eigenValueArray[0] = 2;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.6369467760753132);
+      this->mEigenValueArray[0] = -2;
+      this->mEigenValueArray[1] = 1;
+      this->mEigenValueArray[2] = 1;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.760871035093);
+    }
 
-  eigenValueArray[0] = -2;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.6369467760753132);
-}
+    TYPED_TEST(ModifiedSheetnessFunctorTest, SortsOnAbsoluteValueWithDarkSheets) {
+      this->mModifiedSheetness.DetectDarkSheetsOn();
 
-TEST(ModifiedSheetnessFunctor, double) {
-  typedef double InternalPixelType;
-  const unsigned int DIMENSION = 3;
-  typedef  itk::FixedArray< InternalPixelType, DIMENSION >     EigenValueArrayType;
-  typedef itk::Functor::ModifiedSheetness<EigenValueArrayType, InternalPixelType> FunctorType;
-  FunctorType ModifiedSheetness;
-  EigenValueArrayType eigenValueArray;
+      this->mEigenValueArray[0] = 2;
+      this->mEigenValueArray[1] = 1;
+      this->mEigenValueArray[2] = 1;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.760871035093);
 
-  eigenValueArray[0] = 0;
-  eigenValueArray[1] = 0;
-  eigenValueArray[2] = 0;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), 0);
+      this->mEigenValueArray[0] = -2;
+      this->mEigenValueArray[1] = 1;
+      this->mEigenValueArray[2] = 1;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.760871035093);
+    }
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 0;
-  eigenValueArray[2] = 0;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.3934693402873666);
+    TYPED_TEST(ModifiedSheetnessFunctorTest, BrightnessWorks) {
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = 3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.922274573238);
 
-  eigenValueArray[0] = 0;
-  eigenValueArray[1] = 0;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.3934693402873666);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = -3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.922274573238);
 
-  eigenValueArray[0] = 0;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 0;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.3934693402873666);
+      this->mModifiedSheetness.DetectDarkSheetsOn();
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = 3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.922274573238);
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 0;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.6321205588285578);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = -3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.922274573238);
+    
+      this->mModifiedSheetness.DetectBrightSheetsOn();
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = 3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.922274573238);
 
-  eigenValueArray[0] = 1.1;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.32328095982825455);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = -3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.922274573238);
+    }
 
-  eigenValueArray[0] = -1.1;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.32328095982825455);
+    TYPED_TEST(ModifiedSheetnessFunctorTest, SetAndGetAlpha) {
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness.GetAlpha(), 0.5);
+      this->mModifiedSheetness.SetAlpha(0);
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness.GetAlpha(), 0);
+      this->mModifiedSheetness.SetAlpha(100);
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness.GetAlpha(), 100);
+    }
 
-  ModifiedSheetness.DetectDarkSheetsOn();
-  eigenValueArray[0] = 1.1;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.32328095982825455);
+    TYPED_TEST(ModifiedSheetnessFunctorTest, ChangingAlphaWorks) {
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = 3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.922274573238);
 
-  eigenValueArray[0] = -1.1;
-  eigenValueArray[1] = 1;
-  eigenValueArray[2] = 1;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.32328095982825455);
-}
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = -3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.922274573238);
 
-TEST(ModifiedSheetnessFunctor, Brightness) {
-  typedef double InternalPixelType;
-  const unsigned int DIMENSION = 3;
-  typedef  itk::FixedArray< InternalPixelType, DIMENSION >     EigenValueArrayType;
-  typedef itk::Functor::ModifiedSheetness<EigenValueArrayType, InternalPixelType> FunctorType;
-  FunctorType ModifiedSheetness;
-  EigenValueArrayType eigenValueArray;
+      this->mModifiedSheetness.SetAlpha(1.0);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = 3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.979304847814);
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = 3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.8566220679893631);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = -3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.979304847814);
+    
+      this->mModifiedSheetness.SetAlpha(2.5);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = 3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.995896145936);
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = -3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.8566220679893631);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = -3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.995896145936);
+    }
 
-  ModifiedSheetness.DetectDarkSheetsOn();
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = 3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.8566220679893631);
+    TYPED_TEST(ModifiedSheetnessFunctorTest, SetAndGetC) {
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness.GetC(), 1.0);
+      this->mModifiedSheetness.SetC(0);
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness.GetC(), 0);
+      this->mModifiedSheetness.SetC(100);
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness.GetC(), 100);
+    }
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = -3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.8566220679893631);
- 
-  ModifiedSheetness.DetectBrightSheetsOn();
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = 3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.8566220679893631);
+    TYPED_TEST(ModifiedSheetnessFunctorTest, ChangingCWorks) {
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = 3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.922274573238);
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = -3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.8566220679893631);
-}
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = -3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.922274573238);
 
-TEST(ModifiedSheetnessFunctor, Alpha) {
-  typedef double InternalPixelType;
-  const unsigned int DIMENSION = 3;
-  typedef  itk::FixedArray< InternalPixelType, DIMENSION >     EigenValueArrayType;
-  typedef itk::Functor::ModifiedSheetness<EigenValueArrayType, InternalPixelType> FunctorType;
-  FunctorType ModifiedSheetness;
-  EigenValueArrayType eigenValueArray;
+      this->mModifiedSheetness.SetC(0.5);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = 3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.923116346386);
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = 3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.8566220679893631);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = -3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.923116346386);
+    
+      this->mModifiedSheetness.SetC(2.5);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = 3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)-0.621922134474);
 
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = -3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.8566220679893631);
-
-  ModifiedSheetness.SetAlpha(1.0);
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = 3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.961391238876612);
-
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = -3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.961391238876612);
- 
-  ModifiedSheetness.SetAlpha(2.5);
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = 3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.9929587623609664);
-
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = -3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.9929587623609664);
-}
-
-TEST(ModifiedSheetnessFunctor, C) {
-  typedef double InternalPixelType;
-  const unsigned int DIMENSION = 3;
-  typedef  itk::FixedArray< InternalPixelType, DIMENSION >     EigenValueArrayType;
-  typedef itk::Functor::ModifiedSheetness<EigenValueArrayType, InternalPixelType> FunctorType;
-  FunctorType ModifiedSheetness;
-  EigenValueArrayType eigenValueArray;
-
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = 3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.8566220679893631);
-
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = -3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.8566220679893631);
-
-  ModifiedSheetness.SetC(0.5);
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = 3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.8574039191598484);
-
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = -3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.8574039191598484);
- 
-  ModifiedSheetness.SetC(2.5);
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = 3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)-0.5776503445077833);
-
-  eigenValueArray[0] = 1;
-  eigenValueArray[1] = 2;
-  eigenValueArray[2] = -3;
-  ASSERT_EQ(ModifiedSheetness(eigenValueArray), (InternalPixelType)0.5776503445077833);
+      this->mEigenValueArray[0] = 1;
+      this->mEigenValueArray[1] = 2;
+      this->mEigenValueArray[2] = -3;
+      EXPECT_DOUBLE_EQ(this->mModifiedSheetness(this->mEigenValueArray), (TypeParam)0.621922134474);
+    }
 }

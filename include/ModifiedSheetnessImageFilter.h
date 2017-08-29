@@ -37,34 +37,8 @@ public:
     double l2 = vnl_math_abs( a2 );
     double l3 = vnl_math_abs( a3 );
 
-    // Sort the values by their absolute value.
-    //  l1 <= l2 <= l3
-    if( l2 > l3 ) {
-      double tmpl = l3;
-      l3 = l2;
-      l2 = tmpl;
-      double tmpa = a3;
-      a3 = a2;
-      a2 = tmpa;
-    }
-
-    if( l1 > l2 ) {
-      double tmp = l1;
-      l1 = l2;
-      l2 = tmp;
-      double tmpa = a1;
-      a1 = a2;
-      a2 = tmpa;
-    }   
-
-    if( l2 > l3 ){
-      double tmp = l3;
-      l3 = l2;
-      l2 = tmp;
-      double tmpa = a3;
-      a3 = a2;
-      a2 = tmpa;
-    }
+    // Sort eigen values
+    sortEigenValues(a1, a2, a3, l1, l2, l3);
 
     // Avoid divisions by zero (or close to zero)
     if( static_cast<double>( l3 ) < vnl_math::eps ) {
@@ -72,7 +46,7 @@ public:
       return static_cast<TOutput>( sheetness );
     }
     
-    const double Rt = l1 / vcl_sqrt(l2*l2 + l3*l3);
+    const double Rt = l1 / (l2 + l3);
     const double Rn = vcl_sqrt( l3*l3 + l2*l2 + l1*l1 );
 
     // Calculate sheetness
@@ -83,12 +57,53 @@ public:
     return static_cast<TOutput>( sheetness );
   }
 
-  void SetAlpha( double value ) {
-    this->m_Alpha = value;
+  void sortEigenValues(double &a1, double &a2, double &a3, double &l1, double &l2, double &l3) {
+    double tmpl, tmpa;
+
+    // Sort the values by their absolute value.
+    //  l1 <= l2 <= l3
+    if( l2 > l3 ) {
+      tmpl = l3;
+      l3 = l2;
+      l2 = tmpl;
+      tmpa = a3;
+      a3 = a2;
+      a2 = tmpa;
+    }
+
+    if( l1 > l2 ) {
+      tmpl = l1;
+      l1 = l2;
+      l2 = tmpl;
+      tmpa = a1;
+      a1 = a2;
+      a2 = tmpa;
+    }   
+
+    if( l2 > l3 ){
+      tmpl = l3;
+      l3 = l2;
+      l2 = tmpl;
+      tmpa = a3;
+      a3 = a2;
+      a2 = tmpa;
+    }
   }
 
-  void SetC( double value ) {
-    this->m_C = value;
+  void SetAlpha(double value) {
+    m_Alpha = value;
+  }
+
+  double GetAlpha() {
+    return m_Alpha;
+  }
+
+  void SetC(double value) {
+    m_C = value;
+  }
+
+  double GetC() {
+    return m_C;
   }
 
   void DetectBrightSheetsOn() {
@@ -97,6 +112,10 @@ public:
 
   void DetectDarkSheetsOn() {
     this->m_DetectBrightSheets = 1;
+  }
+
+  bool IsDetectBrightSheetsOn() {
+    return  (m_DetectBrightSheets == -1);
   }
 
 private:
