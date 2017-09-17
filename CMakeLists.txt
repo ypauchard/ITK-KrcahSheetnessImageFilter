@@ -4,6 +4,8 @@ if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0053 NEW)
 endif(COMMAND cmake_policy)
 
+set (CMAKE_CXX_STANDARD 14)
+
 # Turn on with 'cmake -Dmyvarname=ON'.
 option(test "Build all tests." OFF) # Makes boolean 'test' available.
 
