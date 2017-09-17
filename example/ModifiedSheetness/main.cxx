@@ -13,6 +13,7 @@
 #include "itkApproximateSignedDistanceMapImageFilter.h"
 #include "itkNumericTraits.h"
 #include "itkSignedMaurerDistanceMapImageFilter.h"
+#include "itkUnsharpMaskImageFilter.h"
 
 #include "AutomaticSheetnessParameterEstimationImageFilter.h"
 #include "ModifiedSheetnessImageFilter.h"
@@ -53,6 +54,7 @@ typedef itk::LabelStatisticsImageFilter<InputImageType, MaskImageType> LabelStat
 typedef itk::ShiftScaleImageFilter<SheetnessImageType, SheetnessImageType> ShiftScaleImageFilterType;
 typedef itk::BinaryThresholdImageFilter<DTImageType, MaskImageType> BinaryThresholdDTImageFilterType;
 typedef itk::SignedMaurerDistanceMapImageFilter<MaskImageType, DTImageType> SignedMaurerDistanceMapImageFilterType;
+typedef itk::UnsharpMaskImageFilter<InputImageType, InputImageType> UnsharpMaskImageFilterType;
 
 typedef itk::AutomaticSheetnessParameterEstimationImageFilter<EigenValueImageType, MaskImageType> AutomaticSheetnessParameterEstimationImageFilterType;
 typedef itk::MaximumAbsoluteValueImageFilter<SheetnessImageType, SheetnessImageType, SheetnessImageType> MaximumAbsoluteValueFilterType;
@@ -65,6 +67,7 @@ public:
     double automaticSheetnessScale;
     double intensityScaling;
     double dtThreshold;
+    double unsharpAmount;
     std::string inputFileName;
     std::string outputFileName;
     std::string outputMaskFileName;
@@ -75,13 +78,13 @@ public:
         ,automaticSheetnessScale(0.05f)
         ,intensityScaling(100.0f)
         ,m_HasFailed(false)
+        ,unsharpAmount(10)
     {
         // Verify arguments
         if (argc < 6) {
-            std::cerr << "Required: inputImage.mhd outputSheetness.mhd outputMask.mhd N sigma1 ... sigmaN [intensityScaling] [threshold]" << std::endl;
+            std::cerr << "Required: inputImage.mhd outputSheetness.mhd N sigma1 ... sigmaN [intensityScaling] [threshold]" << std::endl;
             std::cerr << "inputImage.mhd:        3D image in Hounsfield Units -1024 to 3071" << std::endl;
             std::cerr << "outputSheetness.mhd:   3D image sheetness results." << std::endl;
-            std::cerr << "outputMask.mhd:        3D image sheetness results." << std::endl;
             std::cerr << "N:                     Number of sigma values" << std::endl;
             std::cerr << "sigma:                 Sigma value (double)" << std::endl;
             std::cerr << "intensityScaling:      Value to scale output by (originally [0,1])" << std::endl;
@@ -93,17 +96,17 @@ public:
         // Parse arguments
         inputFileName = argv[1];
         outputFileName = argv[2];
-        outputMaskFileName = argv[3];
+        // outputMaskFileName = argv[3];
 
-        unsigned int nSigma = atoi(argv[4]);
+        unsigned int nSigma = atoi(argv[3]);
         for (unsigned int i = 0; i < nSigma; i++){
-            sigmas.push_back(atof(argv[5+i]));
+            sigmas.push_back(atof(argv[4+i]));
+        }
+        if (argc >= 5+nSigma) {
+            automaticSheetnessScale = atof(argv[4+nSigma]);
         }
         if (argc >= 6+nSigma) {
-            automaticSheetnessScale = atof(argv[5+nSigma]);
-        }
-        if (argc >= 7+nSigma) {
-            threshold = atof(argv[6+nSigma]);
+            threshold = atof(argv[5+nSigma]);
         }
 
         if (sigmas.size() < 1) {
@@ -135,6 +138,7 @@ std::ostream &operator<<(std::ostream &os, ArgumentDatabase const &db) {
     os << "  automaticSheetnessScale " << db.automaticSheetnessScale << std::endl;
     os << "  intensityScaling        " << db.intensityScaling << std::endl;
     os << "  dtThreshold             " << db.dtThreshold << std::endl;
+    os << "  unsharpAmount           " << db.unsharpAmount << std::endl;
     return os;
 }
 
@@ -143,12 +147,23 @@ typename SheetnessImageType::Pointer calculateSheetnessAtScale(
     , typename MaskImageType::Pointer maskFilePointer
     , double sigma
     , double automaticSheetnessScale
+    , double unsharpAmount
     , int label = 1
 ) {
+    // Gaussian Blur at scale
+    std::cout << "Unsharp masking" << std::endl;
+    typename UnsharpMaskImageFilterType::Pointer unsharpFilter = UnsharpMaskImageFilterType::New();
+    unsharpFilter->SetInput(inputFilePointer);
+    unsharpFilter->SetSigma(sigma);
+    unsharpFilter->SetAmount(unsharpAmount);
+    unsharpFilter->ClampOn();
+    unsharpFilter->SetThreshold(0);
+    unsharpFilter->Update();
+
     // Hessian + EigenAnalysis
     std::cout << "Computing Hessian and performing Eigen-analysis" << std::endl;
     typename HessianFilterType::Pointer hessian = HessianFilterType::New();
-    hessian->SetInput(inputFilePointer);
+    hessian->SetInput(unsharpFilter->GetOutput());
     hessian->SetSigma(sigma);
 
     EigenAnalysisFilterType::Pointer eigen = EigenAnalysisFilterType::New();
@@ -222,13 +237,13 @@ int main(int argc, char *argv[]) {
     dtThreshFilter->SetInsideValue(1);
     dtThreshFilter->Update();
 
-    // Write
-    std::cout << "Writing mask image to " << db.outputMaskFileName << std::endl;
-    MaskWriterType::Pointer maskWriter = MaskWriterType::New();
-    // maskWriter->SetInput(erosionFilter->GetOutput());
-    maskWriter->SetInput(dtThreshFilter->GetOutput());
-    maskWriter->SetFileName(db.outputMaskFileName);
-    maskWriter->Update();
+    // // Write
+    // std::cout << "Writing mask image to " << db.outputMaskFileName << std::endl;
+    // MaskWriterType::Pointer maskWriter = MaskWriterType::New();
+    // // maskWriter->SetInput(erosionFilter->GetOutput());
+    // maskWriter->SetInput(dtThreshFilter->GetOutput());
+    // maskWriter->SetFileName(db.outputMaskFileName);
+    // maskWriter->Update();
 
     // Loop over sigmas, take maximum value
     std::cout << "Current sigma: " << db.sigmas.at(0) << std::endl;
@@ -238,6 +253,7 @@ int main(int argc, char *argv[]) {
         ,dtThreshFilter->GetOutput()
         ,db.sigmas.at(0)
         ,db.automaticSheetnessScale
+        ,db.unsharpAmount
     );
 
     if (db.sigmas.size() > 1) { // need for std::next()
@@ -251,6 +267,7 @@ int main(int argc, char *argv[]) {
                 ,dtThreshFilter->GetOutput()
                 ,*it
                 ,db.automaticSheetnessScale
+                ,db.unsharpAmount
             );
 
             // Take abs max
