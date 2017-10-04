@@ -1,32 +1,37 @@
 cmake_minimum_required(VERSION 2.8)
 
 if(COMMAND cmake_policy)
-	cmake_policy(SET CMP0003 NEW)
+	cmake_policy(SET CMP0053 NEW)
 endif(COMMAND cmake_policy)
+
+set (CMAKE_CXX_STANDARD 14)
 
 # Turn on with 'cmake -Dmyvarname=ON'.
 option(test "Build all tests." OFF) # Makes boolean 'test' available.
 
-project(Testbench)
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${Testbench_SOURCE_DIR}/bin)
-
+# ITK
 find_package(ITK REQUIRED)
 include(${ITK_USE_FILE})
 
-subdirs(src)
+# Include this project
+include_directories(include)
+
+option(BUILD_EXAMPLES "Build examples." ON)
+if(BUILD_EXAMPLES)
+	subdirs(example)
+endif(BUILD_EXAMPLES)
 
 ################################
 # gtest
 ################################
 if (test)
-add_subdirectory(lib/gtest-1.7.0)
-enable_testing()
-include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+	add_subdirectory(lib/googletest)
+	enable_testing()
+	set(GTEST_INCLUDE_DIRS ${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+	include_directories(${GTEST_INCLUDE_DIRS})
 
-##############
-# Unit Tests
-##############
-add_executable(runUnitTests src/test_Sheetness.cxx)
-target_link_libraries(runUnitTests gtest gtest_main)
-
+	##############
+	# Unit Tests
+	##############
+	subdirs(test)
 endif()
